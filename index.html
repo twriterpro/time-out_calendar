@@ -8,9 +8,9 @@
     <!-- Подключение Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- Подключение Leaflet для карты мира -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- MapLibre GL JS (замена Leaflet) -->
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 
     <style>
         /* ============================================================
@@ -69,6 +69,14 @@
             --globe-size: 36px;
             --globe-color: var(--calendar-accent);
             --globe-animation-duration: 4s;
+
+            /* Объемный флажок (маркер) */
+            --flag-pole-height: 24px;
+            --flag-width: 20px;
+            --flag-height: 14px;
+            --flag-primary-color: #e74c3c;
+            --flag-secondary-color: #c0392b;
+            --flag-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
 
         @media (prefers-color-scheme: dark) {
@@ -107,6 +115,8 @@
                 --apply-btn-bg: var(--calendar-accent);
                 --apply-btn-text: #000000;
                 --globe-color: #64b5f6;
+                --flag-primary-color: #ff6b6b;
+                --flag-secondary-color: #d9534f;
             }
         }
 
@@ -191,7 +201,6 @@
         .day-cell.selected { border-color: var(--calendar-selected-border); background-color: var(--calendar-day-hover); box-shadow:0 0 0 3px rgba(36,129,204,0.2); }
         .day-cell.other-month { color: var(--calendar-muted); opacity:0.5; }
 
-        /* Стиль для планируемых событий */
         .day-cell.plan {
             border-style: dashed;
             border-color: #9b59b6;
@@ -218,7 +227,7 @@
             color:var(--calendar-accent-text); font-size:0.95rem; font-weight:600; cursor:pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
             -webkit-tap-highlight-color: transparent; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.1);
-            appearance: none; /* убрать стандартную стрелку для select */
+            appearance: none;
         }
         .action-btn:active,
         .nearest-select:active { transform:scale(0.95); opacity:0.8; }
@@ -247,7 +256,6 @@
         .modal-close { background:none; border:none; font-size:1.8rem; cursor:pointer; color:var(--calendar-muted); transition: transform 0.2s ease; }
         .modal-close:active { transform:rotate(90deg); }
 
-        /* Списки событий */
         .event-list { display:flex; flex-direction:column; gap:15px; }
         .event-date-group {
             background:var(--list-item-bg); border-radius:var(--list-item-border-radius); padding:var(--list-item-padding);
@@ -340,6 +348,57 @@
             background: var(--tg-secondary-bg-color);
         }
 
+        /* Объемный флажок для маркеров */
+        .custom-flag-marker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            filter: drop-shadow(var(--flag-shadow));
+            transition: transform 0.2s ease;
+        }
+        .custom-flag-marker:hover {
+            transform: scale(1.1);
+        }
+        .flag-pole {
+            width: 2px;
+            height: var(--flag-pole-height);
+            background: #333;
+            border-radius: 1px;
+        }
+        .flag-canvas {
+            width: var(--flag-width);
+            height: var(--flag-height);
+            background: linear-gradient(135deg, var(--flag-primary-color) 0%, var(--flag-secondary-color) 100%);
+            clip-path: polygon(0 0, 100% 50%, 0 100%);
+            margin-left: -2px; /* Прикрепить к палке */
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .flag-count {
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+            background: #e74c3c;
+            border-radius: 10px;
+            padding: 2px 5px;
+            margin-top: 2px;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .maplibregl-popup-content {
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: var(--font-family);
+            color: #333;
+        }
+        .maplibregl-popup-close-button {
+            font-size: 18px;
+            padding: 4px;
+        }
+
         @media (max-width:480px) {
             .calendar-container { border-radius:12px; }
             .calendar-header { padding:8px 10px; gap:4px; }
@@ -355,11 +414,17 @@
             .apply-btn { font-size:0.8rem; padding:6px 12px; }
             .badges-container { bottom:2px; }
             .badge { width:12px; height:12px; }
-            --globe-size: 30px;
+            .map-modal .modal-content { height: 80vh; }
+            .flag-pole { height: 20px; }
+            .flag-width { width: 16px; }
+            .flag-height { height: 12px; }
         }
     </style>
 </head>
 <body>
+    <!-- ============================================================
+         ОСНОВНОЙ КОНТЕЙНЕР КАЛЕНДАРЯ
+         ============================================================ -->
     <div class="calendar-container" id="calendarApp">
         <div class="calendar-header">
             <button class="nav-btn" id="prevMonthBtn">‹</button>
@@ -380,7 +445,6 @@
         </div>
         <div class="days-grid" id="daysGrid"></div>
         <div class="action-buttons">
-            <!-- Замена кнопки "Ближайшие выезды" на выпадающий список -->
             <select class="nearest-select" id="nearestSelect">
                 <option value="none" disabled selected>Ближайшие...</option>
                 <option value="out_current_closest">Ближайший выезд</option>
@@ -417,7 +481,7 @@
     <div class="modal-overlay map-modal" id="mapModalOverlay">
         <div class="modal-content" id="mapModalContent">
             <div class="map-header">
-                <h3>Карта событий</h3>
+                <h3>Карта мероприятий</h3>
                 <button class="modal-close" id="mapModalCloseBtn">×</button>
             </div>
             <div class="map-container" id="mapContainer"></div>
@@ -501,9 +565,8 @@
             }
         };
 
-        // Функция получения статуса события
         function getStatusConfig(status) {
-            return statusConfig[status] || statusConfig['plan']; // default
+            return statusConfig[status] || statusConfig['plan'];
         }
 
         // ============================================================
@@ -522,6 +585,68 @@
         // СЕКЦИЯ: ДАННЫЕ СОБЫТИЙ (пример с новыми полями)
         // ============================================================
         const eventsData = {
+            '2025-11-15': [
+                {
+                    title: 'Тверь 22-23 ноября 🏁',
+                    subtitle: '',
+                    city: 'tver',
+                    type: 'out',
+                    guest: 'no',
+                    status: 'current',
+                    description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
+                    location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
+                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }]
+                }
+            ],
+            '2025-12-01': [
+                {
+                    title: 'Тренировка',
+                    subtitle: 'Подготовка к турниру',
+                    city: 'moscow',
+                    type: 'in',
+                    guest: 'no',
+                    status: 'plan',
+                    description: 'Внутренняя тренировка команды',
+                    links: [{ url: 'https://t.me/c/123', text: 'Перейти к теме', emoji: '' }]
+                }
+            ],
+            '2026-01-10': [
+                {
+                    title: 'Встречаем гостей из Минска',
+                    subtitle: 'Товарищеский матч',
+                    city: 'moscow',
+                    type: 'in',
+                    guest: 'yes',
+                    status: 'closest',
+                    description: 'Игра с командой из Минска',
+                    links: [{ url: 'https://t.me/c/456', text: 'Перейти к теме', emoji: '' }]
+                }
+            ],
+            '2026-02-14': [
+                {
+                    title: 'Турнир сообщества',
+                    subtitle: 'Открытый чемпионат',
+                    city: 'spb',
+                    type: 'in',
+                    guest: 'no',
+                    status: 'plan',
+                    description: 'Ежегодный турнир среди команд',
+                    links: []
+                }
+            ],
+            '2026-03-05': [
+                {
+                    title: 'Выезд в Казань',
+                    subtitle: 'Матч',
+                    city: 'kazan',
+                    type: 'out',
+                    guest: 'no',
+                    status: 'plan',
+                    description: 'Игра на выезде',
+                    links: []
+                }
+            ]
+        };        const eventsData = {
             '2025-11-22': [
                 {
                     title: 'Тверь 22-23 ноября 🏁',
@@ -531,6 +656,7 @@
                     guest: 'no',
                     status: 'finish',
                     description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
+                    location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
                     links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }]
                 }
             ],
@@ -543,6 +669,7 @@
                     guest: 'no',
                     status: 'finish',
                     description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
+                    location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
                     links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }]
                 }
             ],
@@ -628,8 +755,6 @@
         let mapInstance = null;
 
         const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-
-        // Годы от 2025 до 2050 (25 лет)
         const START_YEAR = 2025;
         const END_YEAR = 2050;
 
@@ -673,7 +798,6 @@
             const firstDay = new Date(year, month, 1);
             let startDay = firstDay.getDay();
             startDay = (startDay === 0) ? 6 : startDay - 1;
-            const daysInMonth = new Date(year, month+1, 0).getDate();
             const today = new Date();
             const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -695,16 +819,13 @@
 
                 const events = eventsData[cellKey];
                 if (events && events.length > 0) {
-                    // Определяем статус первого события для цвета фона
                     const firstStatus = getStatusConfig(events[0].status);
                     dayCell.style.backgroundColor = hexToRgba(firstStatus.color, 0.15);
 
-                    // Если хоть одно событие plan, добавляем пунктирную рамку
                     if (events.some(ev => ev.status === 'plan')) {
                         dayCell.classList.add('plan');
                     }
 
-                    // Бейджи статусов
                     const badgesContainer = document.createElement('div');
                     badgesContainer.className = 'badges-container';
                     events.forEach(ev => {
@@ -746,7 +867,6 @@
             events.forEach(ev => {
                 const st = getStatusConfig(ev.status);
                 const statusBadge = `<span class="badge" style="background:${st.color}; display:inline-block; width:16px; height:16px; border-radius:50%; vertical-align:middle; margin-right:5px;">${st.svg}</span>`;
-                // Если статус plan, добавляем сообщение "Планируется"
                 const planNote = ev.status === 'plan' ? '<div style="color:#9b59b6; font-weight:600; margin-bottom:5px;">📋 Планируется</div>' : '';
                 eventsHTML += `
                     <div style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid rgba(0,0,0,0.1);">
@@ -765,7 +885,6 @@
                                 `).join('')}
                             </div>
                         ` : ''}
-                        <!-- Кнопка "Все мероприятия" справа от "Перейти к теме" -->
                         <button class="action-btn" style="margin-top:8px; font-size:0.8rem; padding:6px 12px;" onclick="event.stopPropagation(); closeDateModal(); openAllEvents();">Все мероприятия</button>
                     </div>
                 `;
@@ -872,7 +991,6 @@
         function handleListItemClick(dateKey) {
             const events = eventsData[dateKey];
             if (!events || events.length === 0) return;
-            // Закрываем окно списка
             closeListModal();
             const [y,m,d] = dateKey.split('-').map(Number);
             currentDate = new Date(y, m-1, 1);
@@ -932,7 +1050,6 @@
             const statusFilter = document.getElementById('statusFilter');
             const cityFilter = document.getElementById('cityFilter');
 
-            // Заполняем селекты
             const now = new Date();
             months.forEach((mName, idx) => {
                 const opt = document.createElement('option');
@@ -949,13 +1066,12 @@
             }
             pickerYearSelect.value = now.getFullYear();
 
-            let currentFilter = 'month'; // активный фильтр времени
+            let currentFilter = 'month';
 
             function applyAllFilters() {
                 const allEvents = getAllEventsSorted();
                 let filtered = allEvents;
 
-                // Фильтр по времени
                 const today = new Date();
                 today.setHours(0,0,0,0);
                 switch (currentFilter) {
@@ -977,10 +1093,9 @@
                         break;
                     }
                     case 'all': break;
-                    case 'specific': break; // обрабатывается отдельно при нажатии "Применить"
+                    case 'specific': break;
                 }
 
-                // Фильтр по статусу
                 const statusVal = statusFilter.value;
                 if (statusVal !== 'all') {
                     if (statusVal === 'play') {
@@ -991,7 +1106,6 @@
                     }
                 }
 
-                // Фильтр по городу
                 const cityVal = cityFilter.value;
                 if (cityVal !== 'all') {
                     filtered = filtered.filter(item => item.event.city === cityVal);
@@ -1019,13 +1133,11 @@
                 const selYear = parseInt(pickerYearSelect.value,10);
                 const startDate = new Date(selYear, selMonth, 1);
                 const endDate = new Date(selYear, selMonth+1, 0);
-                // Переопределяем фильтр на кастомный месяц
                 const allEvents = getAllEventsSorted();
                 let filtered = allEvents.filter(item => {
                     const eventDate = parseDateKey(item.dateKey);
                     return eventDate >= startDate && eventDate <= endDate;
                 });
-                // Применяем статус и город
                 const statusVal = statusFilter.value;
                 if (statusVal !== 'all') {
                     if (statusVal === 'play') {
@@ -1062,7 +1174,6 @@
             tg.BackButton.hide();
         }
 
-        // Функция поиска ближайшего события по критериям
         function findNearestEvent(predicate) {
             const today = new Date();
             today.setHours(0,0,0,0);
@@ -1116,13 +1227,12 @@
                 const item = findNearestEvent(predicate);
                 goToEvent(item);
             }
-            nearestSelect.value = 'none'; // сброс
+            nearestSelect.value = 'none';
         });
 
         // ============================================================
-        // СЕКЦИЯ: ГЛОБУС И КАРТА МИРА
+        // СЕКЦИЯ: ГЛОБУС И КАРТА МИРА (MapLibre GL)
         // ============================================================
-        // Иконка глобуса уже в HTML. Открытие карты по клику.
         globeBtn.addEventListener('click', openMapModal);
         mapModalCloseBtn.addEventListener('click', closeMapModal);
         mapModalOverlay.addEventListener('click', (e) => { if (e.target === mapModalOverlay) closeMapModal(); });
@@ -1130,52 +1240,82 @@
         function openMapModal() {
             mapModalOverlay.classList.add('active');
             if (!mapInstance) {
-                // Инициализация Leaflet карты
-                mapInstance = L.map(mapContainer).setView([55, 37], 4); // Центр на Россию
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(mapInstance);
+                // Создаём карту MapLibre
+                mapInstance = new maplibregl.Map({
+                    container: mapContainer,
+                    style: 'https://demotiles.maplibre.org/style.json', // бесплатный демо-стиль
+                    center: [37.6173, 55.7558], // Москва
+                    zoom: 3
+                });
+                mapInstance.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-                // Добавляем маркеры для городов с событиями
+                // Добавляем маркеры-флажки для каждого города с мероприятиями
                 Object.entries(cityData).forEach(([code, city]) => {
-                    // Проверяем, есть ли события в этом городе
-                    const hasEvents = Object.values(eventsData).some(events =>
-                        events.some(ev => ev.city === code)
-                    );
-                    if (hasEvents) {
-                        const marker = L.circleMarker([city.lat, city.lon], {
-                            radius: 8,
-                            fillColor: '#3498db',
-                            color: '#fff',
-                            weight: 1,
-                            opacity: 1,
-                            fillOpacity: 0.8
-                        }).addTo(mapInstance);
-                        marker.bindPopup(`<b>${city.name}</b><br>Событий: ${countEventsInCity(code)}`);
+                    const eventsInCity = [];
+                    // Собираем события в этом городе
+                    for (const [dateKey, events] of Object.entries(eventsData)) {
+                        events.forEach(ev => {
+                            if (ev.city === code) {
+                                eventsInCity.push({ dateKey, event: ev });
+                            }
+                        });
                     }
+                    if (eventsInCity.length === 0) return;
+
+                    // Определяем координаты (можно переопределить через location события)
+                    let lat = city.lat;
+                    let lon = city.lon;
+                    if (eventsInCity[0].event.location) {
+                        lat = eventsInCity[0].event.location.lat;
+                        lon = eventsInCity[0].event.location.lon;
+                    }
+
+                    // Создаём DOM-элемент для объемного флажка
+                    const flagEl = document.createElement('div');
+                    flagEl.className = 'custom-flag-marker';
+                    flagEl.innerHTML = `
+                        <div class="flag-pole"></div>
+                        <div class="flag-canvas"></div>
+                        <div class="flag-count">${eventsInCity.length}</div>
+                    `;
+
+                    // Создаём маркер MapLibre
+                    const marker = new maplibregl.Marker({ element: flagEl })
+                        .setLngLat([lon, lat])
+                        .addTo(mapInstance);
+
+                    // Popup с информацией о мероприятиях
+                    const popupContent = document.createElement('div');
+                    popupContent.innerHTML = `<strong>${city.name}</strong><br>Мероприятий: ${eventsInCity.length}`;
+                    eventsInCity.forEach(({dateKey, event}) => {
+                        const date = parseDateKey(dateKey);
+                        const dateStr = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+                        const status = getStatusConfig(event.status);
+                        popupContent.innerHTML += `
+                            <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
+                                <span style="background:${status.color}; display:inline-block; width:10px; height:10px; border-radius:50%;"></span>
+                                <strong>${dateStr}</strong>: ${event.title}
+                                ${event.description ? `<br><small>${event.description}</small>` : ''}
+                            </div>
+                        `;
+                    });
+
+                    const popup = new maplibregl.Popup({ offset: 25, closeButton: true })
+                        .setDOMContent(popupContent);
+                    marker.setPopup(popup);
                 });
 
                 // Анимация приближения к России
                 setTimeout(() => {
-                    mapInstance.flyTo([55, 37], 5, { duration: 2 });
+                    mapInstance.flyTo({ center: [37.6173, 55.7558], zoom: 5, duration: 2000 });
                 }, 500);
             }
-            // Пересоздаем карту при открытии (для обновления)
-            setTimeout(() => mapInstance.invalidateSize(), 100);
+            // Обновляем размер карты после показа модального окна
+            setTimeout(() => mapInstance.resize(), 100);
         }
 
         function closeMapModal() {
             mapModalOverlay.classList.remove('active');
-        }
-
-        function countEventsInCity(cityCode) {
-            let count = 0;
-            for (const events of Object.values(eventsData)) {
-                events.forEach(ev => {
-                    if (ev.city === cityCode) count++;
-                });
-            }
-            return count;
         }
 
         // ============================================================
