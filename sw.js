@@ -2,7 +2,6 @@ const CACHE_NAME = 'calendar-cache-v1';
 const urlsToCache = [
     './',
     './index.html',
-    // Добавьте сюда другие ресурсы, если необходимо
 ];
 
 self.addEventListener('install', event => {
