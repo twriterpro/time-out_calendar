@@ -5,19 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Календарь событий</title>
 
-    <!-- ============================================================
-         ПОДКЛЮЧЕНИЕ TELEGRAM WEB APP SCRIPT
-         Этот скрипт обязателен для корректной работы внутри Telegram.
-         Он предоставляет API для управления темой, размерами окна и т.д.
-    ============================================================ -->
+    <!-- Подключение Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
         /* ============================================================
-               ГЛОБАЛЬНЫЕ СТИЛИ И ПЕРЕМЕННЫЕ
+               ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И СТИЛИ
                ============================================================ */
         :root {
-            /* Основные цвета – будут переопределены из Telegram, если доступно */
+            /* Основные цвета Telegram (переопределяются динамически) */
             --tg-bg-color: #ffffff;
             --tg-text-color: #222222;
             --tg-hint-color: #999999;
@@ -26,7 +22,7 @@
             --tg-button-text-color: #ffffff;
             --tg-secondary-bg-color: #f0f0f0;
 
-            /* Дополнительные цвета для календаря */
+            /* Дополнительные цвета календаря */
             --calendar-bg: var(--tg-bg-color);
             --calendar-text: var(--tg-text-color);
             --calendar-muted: var(--tg-hint-color);
@@ -40,12 +36,10 @@
             --calendar-modal-overlay: rgba(0, 0, 0, 0.5);
             --calendar-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
             --calendar-radius: 16px;
-
-            /* Шрифты */
             --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
-        /* Тёмная тема – если Telegram сообщает о тёмной теме */
+        /* Тёмная тема */
         @media (prefers-color-scheme: dark) {
             :root {
                 --tg-bg-color: #1e1e1e;
@@ -92,7 +86,7 @@
         }
 
         /* ============================================================
-               КОНТЕЙНЕР КАЛЕНДАРЯ
+               КОНТЕЙНЕР ПРИЛОЖЕНИЯ
                ============================================================ */
         .calendar-container {
             width: 100%;
@@ -210,7 +204,39 @@
         }
 
         /* ============================================================
-               МОДАЛЬНОЕ ОКНО (POPUP)
+               КНОПКИ ДОПОЛНИТЕЛЬНЫХ РАЗДЕЛОВ
+               ============================================================ */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background: var(--tg-secondary-bg-color);
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            background: var(--calendar-accent);
+            color: var(--calendar-accent-text);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        /* ============================================================
+               МОДАЛЬНОЕ ОКНО ДЛЯ ДАТЫ (ОРИГИНАЛ)
                ============================================================ */
         .modal-overlay {
             position: fixed;
@@ -257,7 +283,6 @@
             opacity: 1;
         }
 
-        /* Анимация "из ячейки" задаётся через inline style для transform-origin */
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -282,78 +307,120 @@
             transform: rotate(90deg);
         }
 
-        .event-item {
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
+        /* ============================================================
+               СТИЛИ ДЛЯ СПИСКОВ СОБЫТИЙ (В МОДАЛЬНОМ ОКНЕ)
+               ============================================================ */
+        .event-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        .event-item:last-child {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
+        .event-list-item {
+            background: var(--tg-secondary-bg-color);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: default;
         }
 
-        .event-title {
+        .event-list-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .event-list-date {
+            font-size: 0.85rem;
+            color: var(--calendar-accent);
             font-weight: 600;
             margin-bottom: 5px;
         }
 
-        .event-description {
+        .event-list-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .event-list-description {
             font-size: 0.9rem;
             color: var(--calendar-muted);
             margin-bottom: 8px;
         }
 
-        .event-image {
-            max-width: 100%;
-            border-radius: 8px;
-            margin: 8px 0;
-        }
-
-        .event-links {
+        .event-list-links {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-top: 8px;
         }
 
-        .event-link {
+        .event-list-link {
             display: inline-block;
             background: var(--calendar-accent);
             color: var(--calendar-accent-text);
-            padding: 6px 12px;
+            padding: 5px 10px;
             border-radius: 20px;
             text-decoration: none;
-            font-size: 0.85rem;
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            font-size: 0.8rem;
+            transition: opacity 0.2s ease;
         }
 
-        .event-link:active {
-            transform: scale(0.95);
+        .event-list-link:active {
             opacity: 0.8;
         }
 
-        /* Анимация смены месяца */
-        .month-slide-enter {
-            animation: slideIn 0.3s ease forwards;
+        /* ============================================================
+               ФИЛЬТРЫ ДЛЯ "ВСЕХ МЕРОПРИЯТИЙ"
+               ============================================================ */
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
         }
 
-        .month-slide-exit {
-            animation: slideOut 0.3s ease forwards;
+        .filter-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 20px;
+            background: var(--tg-secondary-bg-color);
+            color: var(--calendar-text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            white-space: nowrap;
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(30px); }
-            to   { opacity: 1; transform: translateX(0); }
+        .filter-btn.active {
+            background: var(--calendar-accent);
+            color: var(--calendar-accent-text);
         }
 
-        @keyframes slideOut {
-            from { opacity: 1; transform: translateX(0); }
-            to   { opacity: 0; transform: translateX(-30px); }
+        .filter-month-input {
+            padding: 6px 10px;
+            border: 1px solid var(--calendar-muted);
+            border-radius: 8px;
+            background: var(--tg-secondary-bg-color);
+            color: var(--calendar-text);
+            font-size: 0.9rem;
         }
 
-        /* Адаптивные отступы для мобильных */
+        /* Анимации для списков */
+        .list-modal-content {
+            transform-origin: center;
+        }
+
+        .list-modal-overlay.active .list-modal-content {
+            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        /* Адаптивные стили для мобильных */
         @media (max-width: 480px) {
             .calendar-container {
                 border-radius: 12px;
@@ -369,13 +436,28 @@
                 font-size: 0.85rem;
                 border-radius: 8px;
             }
-            .modal-content {
+            .modal-content,
+            .list-modal-content {
                 padding: 15px;
                 width: 95%;
             }
+            .action-buttons {
+                padding: 10px 12px;
+                gap: 6px;
+            }
+            .action-btn {
+                font-size: 0.9rem;
+                padding: 10px;
+            }
+            .event-list-item {
+                padding: 12px;
+            }
+            .filter-btn {
+                font-size: 0.75rem;
+                padding: 6px 10px;
+            }
         }
 
-        /* Для очень маленьких экранов */
         @media (max-width: 320px) {
             .day-cell {
                 font-size: 0.7rem;
@@ -389,17 +471,17 @@
 <body>
 
     <!-- ============================================================
-         КОНТЕЙНЕР КАЛЕНДАРЯ
+         ОСНОВНОЙ КОНТЕЙНЕР КАЛЕНДАРЯ
          ============================================================ -->
     <div class="calendar-container" id="calendarApp">
-        <!-- Шапка с навигацией -->
+        <!-- Шапка -->
         <div class="calendar-header">
             <button class="nav-btn" id="prevMonthBtn">‹</button>
             <div class="month-year" id="monthYearLabel"></div>
             <button class="nav-btn" id="nextMonthBtn">›</button>
         </div>
 
-        <!-- Названия дней недели -->
+        <!-- Дни недели -->
         <div class="weekdays">
             <div>Пн</div>
             <div>Вт</div>
@@ -412,10 +494,18 @@
 
         <!-- Сетка дней -->
         <div class="days-grid" id="daysGrid"></div>
+
+        <!-- ============================================================
+             КНОПКИ ДОПОЛНИТЕЛЬНЫХ ФУНКЦИЙ
+             ============================================================ -->
+        <div class="action-buttons">
+            <button class="action-btn" id="nearestBtn">Ближайшие выезды</button>
+            <button class="action-btn" id="allEventsBtn">Все мероприятия</button>
+        </div>
     </div>
 
     <!-- ============================================================
-         МОДАЛЬНОЕ ОКНО ДЛЯ СОБЫТИЙ
+         МОДАЛЬНОЕ ОКНО ДЛЯ ДАТЫ (ДЕТАЛИ СОБЫТИЯ)
          ============================================================ -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-content" id="modalContent">
@@ -427,19 +517,28 @@
         </div>
     </div>
 
+    <!-- ============================================================
+         МОДАЛЬНОЕ ОКНО ДЛЯ СПИСКОВ (БЛИЖАЙШИЕ / ВСЕ)
+         ============================================================ -->
+    <div class="modal-overlay list-modal-overlay" id="listModalOverlay">
+        <div class="modal-content list-modal-content" id="listModalContent">
+            <div class="modal-header">
+                <h3 id="listModalTitle">События</h3>
+                <button class="modal-close" id="listModalCloseBtn">×</button>
+            </div>
+            <div id="listModalBody"></div>
+        </div>
+    </div>
+
     <script>
         // ============================================================
         // ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
         // ============================================================
         let tg = window.Telegram.WebApp;
-
-        // Сообщаем Telegram, что приложение готово к работе
         tg.ready();
-
-        // Разворачиваем приложение на весь экран (рекомендуется)
         tg.expand();
 
-        // Применяем цветовую схему Telegram, если она доступна
+        // Применение темы Telegram
         function applyTelegramTheme() {
             const theme = tg.themeParams;
             if (theme) {
@@ -453,41 +552,21 @@
             }
         }
         applyTelegramTheme();
-
-        // Слушаем изменения темы (если пользователь переключит в Telegram)
         tg.onEvent('themeChanged', applyTelegramTheme);
 
         // ============================================================
-        // НАСТРОЙКА ДАННЫХ КАЛЕНДАРЯ
+        // ДАННЫЕ СОБЫТИЙ (СТАТИЧЕСКИЙ ОБЪЕКТ)
         // ============================================================
-        // Объект eventsData содержит события по датам.
-        // Ключ – строка в формате 'YYYY-MM-DD' (год-месяц-день).
-        // Значение – массив объектов событий.
-        //
-        // Формат события:
-        // {
-        //   title: string,          // Заголовок события
-        //   description: string,    // Описание (можно HTML)
-        //   image: string (url),    // (необязательно) ссылка на изображение
-        //   links: [                // (необязательно) массив ссылок
-        //     {
-        //       url: string,        // URL топика Telegram или любой другой
-        //       text: string,       // Текст ссылки (произвольный)
-        //       emoji: string       // (необязательно) эмодзи вместо текста
-        //     }
-        //   ]
-        // }
-        //
-        // Вы можете редактировать этот объект под свои нужды.
-        // Для динамической подгрузки данных замените статический объект на fetch() к вашему API.
-        const eventsData = {
+        // Формат: { 'YYYY-MM-DD': [ {title, description, image, links[]} ] }
+        // Вы можете заменить на асинхронную загрузку с API.
+            const eventsData = {
             // Примеры для текущего месяца (будут отображены в соответствующие даты)
             // Тверь 22-23 ноября
             '2025-11-22': [
                 {
                     title: 'Первый выездной турнир',
                     subtitle: 'Тверь 22-23 ноября 🏁',
-                    description: 'КНТ "Stalex" г. Тверь  - "Тайм-Аут" НТ Москва',
+                    description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
                     links: [
                         { url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }
                     ]
@@ -503,7 +582,7 @@
                 {
                     title: 'Первый выездной турнир',
                     subtitle: 'Тверь 22-23 ноября 🏁',
-                    description: 'КНТ "Stalex" г. Тверь  - "Тайм-Аут" НТ Москва',
+                    description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
                     links: [
                         { url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }
                     ]
@@ -528,124 +607,93 @@
         const modalEvents = document.getElementById('modalEvents');
         const modalCloseBtn = document.getElementById('modalCloseBtn');
 
-        // Текущая отображаемая дата (месяц и год)
-        let currentDate = new Date(); // сегодня
-        let selectedDate = null;      // выбранная дата (для модального окна)
+        // Новые элементы
+        const nearestBtn = document.getElementById('nearestBtn');
+        const allEventsBtn = document.getElementById('allEventsBtn');
+        const listModalOverlay = document.getElementById('listModalOverlay');
+        const listModalContent = document.getElementById('listModalContent');
+        const listModalTitle = document.getElementById('listModalTitle');
+        const listModalBody = document.getElementById('listModalBody');
+        const listModalCloseBtn = document.getElementById('listModalCloseBtn');
 
-        // Массив названий месяцев для отображения
-        const months = [
-            'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-        ];
+        let currentDate = new Date(); // текущий отображаемый месяц
+        let selectedDate = null;      // выбранная дата
+        let selectedDayElement = null; // DOM-элемент выбранной ячейки
 
-        // Массив названий дней недели (для совместимости с getDay())
-        const weekDaysShort = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+        const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+        const weekDaysShort = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
 
         /**
-         * Форматирует дату в строку YYYY-MM-DD (локальное время)
+         * Форматирует дату в строку YYYY-MM-DD
          */
         function formatDateKey(year, month, day) {
             return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         }
 
         /**
-         * Генерирует сетку дней для указанного месяца и года
+         * Генерирует сетку дней для указанного месяца
          */
         function renderCalendar(year, month) {
-            // Очищаем сетку
             daysGrid.innerHTML = '';
-
-            // Обновляем заголовок
             monthYearLabel.textContent = `${months[month]} ${year}`;
 
-            // Определяем первый день месяца (0 = воскресенье, 1 = понедельник, ...)
             const firstDay = new Date(year, month, 1);
-            let startDay = firstDay.getDay(); // 0..6
-            // Переводим на понедельник как первый день (Пн=0, Вс=6)
-            startDay = (startDay === 0) ? 6 : startDay - 1;
+            let startDay = firstDay.getDay();
+            startDay = (startDay === 0) ? 6 : startDay - 1; // Пн = 0
 
-            // Количество дней в месяце
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-            // Количество дней в предыдущем месяце (для заполнения пустых ячеек)
-            const daysInPrevMonth = new Date(year, month, 0).getDate();
-
-            // Текущая дата для отметки "сегодня"
             const today = new Date();
             const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
-
-            // Собираем все ячейки (42 = 6 недель * 7 дней)
             const totalCells = 42;
             let cells = [];
 
             for (let i = 0; i < totalCells; i++) {
-                const dayNumber = i - startDay + 1; // день месяца (может быть <=0 или > daysInMonth)
-                let cellDate = new Date(year, month, dayNumber);
-                let cellYear = cellDate.getFullYear();
-                let cellMonth = cellDate.getMonth();
-                let cellDay = cellDate.getDate();
-                let isOtherMonth = (cellMonth !== month);
+                const dayNumber = i - startDay + 1;
+                const cellDate = new Date(year, month, dayNumber);
+                const cellYear = cellDate.getFullYear();
+                const cellMonth = cellDate.getMonth();
+                const cellDay = cellDate.getDate();
+                const isOtherMonth = (cellMonth !== month);
 
-                // Создаём элемент ячейки
                 const dayCell = document.createElement('div');
                 dayCell.className = 'day-cell';
                 dayCell.textContent = cellDay;
 
-                // Отмечаем "сегодня"
                 const cellKey = formatDateKey(cellYear, cellMonth, cellDay);
-                if (cellKey === todayKey) {
-                    dayCell.classList.add('today');
-                }
+                if (cellKey === todayKey) dayCell.classList.add('today');
+                if (isOtherMonth) dayCell.classList.add('other-month');
+                if (eventsData[cellKey]) dayCell.classList.add('has-events');
 
-                // Если ячейка относится к другому месяцу, добавляем класс
-                if (isOtherMonth) {
-                    dayCell.classList.add('other-month');
-                }
-
-                // Проверяем наличие событий
-                if (eventsData[cellKey]) {
-                    dayCell.classList.add('has-events');
-                }
-
-                // Обработчик клика
                 dayCell.addEventListener('click', () => handleDayClick(cellKey, dayCell));
-
                 cells.push(dayCell);
             }
-
-            // Добавляем ячейки в сетку
             cells.forEach(cell => daysGrid.appendChild(cell));
 
             // Анимация появления сетки
             daysGrid.classList.remove('month-slide-enter');
-            void daysGrid.offsetWidth; // форсируем reflow для повторного запуска анимации
+            void daysGrid.offsetWidth;
             daysGrid.classList.add('month-slide-enter');
         }
 
         /**
-         * Обработчик клика по дню – открывает модальное окно с событиями
+         * Обработка клика по дню
          */
         function handleDayClick(dateKey, dayCellElement) {
             selectedDate = dateKey;
+            selectedDayElement = dayCellElement;
             const events = eventsData[dateKey] || [];
-            if (events.length === 0) {
-                // Если событий нет, можно показать лёгкое уведомление или ничего
-                return;
-            }
+            if (events.length === 0) return;
 
-            // Заполняем модальное окно
-            showModal(dateKey, events, dayCellElement);
+            showDateModal(dateKey, events, dayCellElement);
         }
 
         /**
-         * Показывает модальное окно с анимацией из выбранной ячейки
+         * Показ модального окна с деталями события (для выбранной даты)
          */
-        function showModal(dateKey, events, sourceElement) {
-            // Устанавливаем заголовок даты
+        function showDateModal(dateKey, events, sourceElement) {
             const [y, m, d] = dateKey.split('-').map(Number);
             modalDate.textContent = `${d} ${months[m-1]} ${y}`;
 
-            // Генерируем HTML событий
             let eventsHTML = '';
             events.forEach(event => {
                 eventsHTML += `
@@ -667,67 +715,41 @@
             });
             modalEvents.innerHTML = eventsHTML;
 
-            // Определяем координаты исходной ячейки для анимации
+            // Анимация из ячейки
             const rect = sourceElement.getBoundingClientRect();
-            const originX = rect.left + rect.width / 2;
-            const originY = rect.top + rect.height / 2;
-
-            // Устанавливаем transform-origin для модального контента
-            modalContent.style.transformOrigin = `${originX}px ${originY}px`;
-
-            // Показываем оверлей
+            modalContent.style.transformOrigin = `${rect.left + rect.width / 2}px ${rect.top + rect.height / 2}px`;
             modalOverlay.classList.add('active');
+            tg.BackButton.show();
         }
 
         /**
-         * Закрывает модальное окно с анимацией "в ячейку"
+         * Закрытие модального окна даты
          */
-        function closeModal() {
-            if (!selectedDate) return;
-            // Находим ячейку, соответствующую выбранной дате, для корректной анимации
-            const dateCells = document.querySelectorAll('.day-cell');
-            let targetCell = null;
-            dateCells.forEach(cell => {
-                // Сравниваем текст и месяц/год? Проще найти по data-атрибуту, но мы его не задавали.
-                // Для упрощения используем последнюю выбранную ячейку (сохранённую в selectedDateCell)
-            });
-            // Мы не сохранили ячейку, поэтому просто скроем с анимацией к центру (или к последней позиции)
-            // Чтобы реализовать "в ячейку", можно сохранять ссылку на ячейку при открытии.
-            // Для полноты добавим сохранение.
-            // (см. модификацию выше: передаём sourceElement в showModal, но не сохраняем)
-            // Модифицируем: в глобальной области будем хранить последнюю открытую ячейку.
-            // Объявим переменную selectedDayElement.
+        function closeDateModal() {
             if (selectedDayElement) {
                 const rect = selectedDayElement.getBoundingClientRect();
                 modalContent.style.transformOrigin = `${rect.left + rect.width / 2}px ${rect.top + rect.height / 2}px`;
             }
             modalOverlay.classList.remove('active');
+            tg.BackButton.hide();
         }
 
-        // Переменная для хранения элемента ячейки (для анимации закрытия)
-        let selectedDayElement = null;
+        // Обработчики для модального окна даты
+        modalCloseBtn.addEventListener('click', closeDateModal);
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeDateModal();
+        });
 
-        // Модифицируем handleDayClick, чтобы сохранить ячейку
-        function handleDayClick(dateKey, dayCellElement) {
-            selectedDate = dateKey;
-            selectedDayElement = dayCellElement;
-            const events = eventsData[dateKey] || [];
-            if (events.length === 0) return;
-            showModal(dateKey, events, dayCellElement);
-        }
-
-        // Обновлённая функция showModal (уже использует sourceElement)
-        // В closeModal используем selectedDayElement.
-
-        // Обработчики навигации
+        // ============================================================
+        // НАВИГАЦИЯ ПО МЕСЯЦАМ
+        // ============================================================
         prevMonthBtn.addEventListener('click', () => {
-            // Анимация ухода
             daysGrid.classList.add('month-slide-exit');
             setTimeout(() => {
                 currentDate.setMonth(currentDate.getMonth() - 1);
                 renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
                 daysGrid.classList.remove('month-slide-exit');
-            }, 300); // должно совпадать с длительностью анимации
+            }, 300);
         });
 
         nextMonthBtn.addEventListener('click', () => {
@@ -739,54 +761,293 @@
             }, 300);
         });
 
-        // Закрытие модального окна
-        modalCloseBtn.addEventListener('click', closeModal);
+        // ============================================================
+        // ФУНКЦИИ ДЛЯ "БЛИЖАЙШИХ ВЫЕЗДОВ" И "ВСЕХ МЕРОПРИЯТИЙ"
+        // ============================================================
 
-        // Закрытие по клику на оверлей
-        modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) {
-                closeModal();
-            }
-        });
-
-        // Закрытие по кнопке "назад" в Telegram (если поддерживается)
-        tg.onEvent('backButtonClicked', () => {
-            if (modalOverlay.classList.contains('active')) {
-                closeModal();
-            }
-        });
-
-        // Показываем кнопку "Назад" в Telegram при открытом модальном окне
-        function updateBackButton() {
-            if (modalOverlay.classList.contains('active')) {
-                tg.BackButton.show();
-            } else {
-                tg.BackButton.hide();
-            }
+        /**
+         * Получение объекта Date из строки YYYY-MM-DD
+         */
+        function parseDateKey(dateKey) {
+            const [y, m, d] = dateKey.split('-').map(Number);
+            return new Date(y, m - 1, d);
         }
 
-        // Переопределяем showModal и closeModal для вызова updateBackButton
-        const originalShowModal = showModal;
-        showModal = function(...args) {
-            originalShowModal.apply(this, args);
-            updateBackButton();
-        };
+        /**
+         * Получение списка событий, отсортированных по дате
+         * Возвращает массив объектов { dateKey, event }
+         */
+        function getAllEventsSorted() {
+            const result = [];
+            for (const [dateKey, events] of Object.entries(eventsData)) {
+                events.forEach(event => {
+                    result.push({ dateKey, event });
+                });
+            }
+            // Сортировка по возрастанию даты
+            result.sort((a, b) => parseDateKey(a.dateKey) - parseDateKey(b.dateKey));
+            return result;
+        }
 
-        const originalCloseModal = closeModal;
-        closeModal = function(...args) {
-            originalCloseModal.apply(this, args);
-            updateBackButton();
-        };
+        /**
+         * Отображение списка событий в модальном окне
+         * @param {Array} items - массив { dateKey, event }
+         * @param {string} title - заголовок окна
+         */
+        function renderEventList(items, title = 'События') {
+            listModalTitle.textContent = title;
+            if (items.length === 0) {
+                listModalBody.innerHTML = '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
+            } else {
+                let html = '<div class="event-list">';
+                items.forEach(item => {
+                    const date = parseDateKey(item.dateKey);
+                    const dateStr = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+                    html += `
+                        <div class="event-list-item">
+                            <div class="event-list-date">${dateStr}</div>
+                            <div class="event-list-title">${item.event.title}</div>
+                            ${item.event.description ? `<div class="event-list-description">${item.event.description}</div>` : ''}
+                            ${item.event.image ? `<img class="event-image" src="${item.event.image}" alt="${item.event.title}">` : ''}
+                            ${item.event.links && item.event.links.length ? `
+                                <div class="event-list-links">
+                                    ${item.event.links.map(link => `
+                                        <a class="event-list-link" href="${link.url}" target="_blank" rel="noopener noreferrer">
+                                            ${link.emoji ? link.emoji + ' ' : ''}${link.text || 'Ссылка'}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                listModalBody.innerHTML = html;
+            }
+            listModalOverlay.classList.add('active');
+            tg.BackButton.show();
+        }
 
-        // Инициализация календаря
+        /**
+         * Закрытие модального окна списков
+         */
+        function closeListModal() {
+            listModalOverlay.classList.remove('active');
+            tg.BackButton.hide();
+        }
+
+        // Обработчики для модального окна списков
+        listModalCloseBtn.addEventListener('click', closeListModal);
+        listModalOverlay.addEventListener('click', (e) => {
+            if (e.target === listModalOverlay) closeListModal();
+        });
+
+        /**
+         * Показ ближайших событий (текущий и следующий месяц от сегодня)
+         */
+        function showNearestEvents() {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+
+            // Собираем все события
+            const allEvents = getAllEventsSorted();
+
+            // Фильтруем: дата >= сегодня и месяц = текущий или следующий
+            const nearest = allEvents.filter(item => {
+                const eventDate = parseDateKey(item.dateKey);
+                if (eventDate < today) return false;
+                const monthDiff = (eventDate.getFullYear() - currentYear) * 12 + (eventDate.getMonth() - currentMonth);
+                return monthDiff >= 0 && monthDiff <= 1; // только текущий и следующий месяц
+            });
+
+            renderEventList(nearest, 'Ближайшие выезды');
+        }
+
+        /**
+         * Показ всех событий с фильтрами
+         */
+        function showAllEvents() {
+            // Отрисовка интерфейса фильтров и пустого списка
+            listModalTitle.textContent = 'Все мероприятия';
+            listModalBody.innerHTML = `
+                <div class="filter-container" id="filterContainer">
+                    <button class="filter-btn active" data-filter="month">За месяц</button>
+                    <button class="filter-btn" data-filter="half-year">За полгода</button>
+                    <button class="filter-btn" data-filter="year">За год</button>
+                    <button class="filter-btn" data-filter="specific">Выбор месяца</button>
+                    <button class="filter-btn" data-filter="all">Все время</button>
+                </div>
+                <div id="monthPickerContainer" style="display:none; margin-bottom:15px;">
+                    <input type="month" class="filter-month-input" id="monthPickerInput">
+                    <button class="filter-btn" id="applyMonthFilter">Применить</button>
+                </div>
+                <div id="allEventsListContainer"></div>
+            `;
+
+            // Получаем контейнер для списка
+            const eventsListContainer = document.getElementById('allEventsListContainer');
+            const filterButtons = document.querySelectorAll('#filterContainer .filter-btn');
+            const monthPickerContainer = document.getElementById('monthPickerContainer');
+            const monthPickerInput = document.getElementById('monthPickerInput');
+            const applyMonthFilterBtn = document.getElementById('applyMonthFilter');
+
+            // Функция обновления списка в зависимости от фильтра
+            function updateAllEventsList(filter) {
+                // Скрываем/показываем выбор месяца
+                if (filter === 'specific') {
+                    monthPickerContainer.style.display = 'block';
+                } else {
+                    monthPickerContainer.style.display = 'none';
+                }
+
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const allEvents = getAllEventsSorted();
+
+                let filteredEvents = [];
+
+                switch (filter) {
+                    case 'month': {
+                        // События от сегодняшнего дня до конца текущего месяца
+                        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                        filteredEvents = allEvents.filter(item => {
+                            const eventDate = parseDateKey(item.dateKey);
+                            return eventDate >= today && eventDate <= endOfMonth;
+                        });
+                        break;
+                    }
+                    case 'half-year': {
+                        const sixMonthsLater = new Date(today);
+                        sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+                        filteredEvents = allEvents.filter(item => {
+                            const eventDate = parseDateKey(item.dateKey);
+                            return eventDate >= today && eventDate <= sixMonthsLater;
+                        });
+                        break;
+                    }
+                    case 'year': {
+                        const oneYearLater = new Date(today);
+                        oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+                        filteredEvents = allEvents.filter(item => {
+                            const eventDate = parseDateKey(item.dateKey);
+                            return eventDate >= today && eventDate <= oneYearLater;
+                        });
+                        break;
+                    }
+                    case 'all': {
+                        filteredEvents = allEvents;
+                        break;
+                    }
+                    case 'specific': {
+                        // Ничего не показываем, ждём выбора месяца
+                        filteredEvents = [];
+                        break;
+                    }
+                }
+
+                // Отрисовка отфильтрованного списка
+                if (filter === 'specific') {
+                    // Очищаем список, пока не выбран месяц
+                    eventsListContainer.innerHTML = '<p style="text-align:center; color:var(--calendar-muted);">Выберите месяц</p>';
+                } else {
+                    renderEventListItems(filteredEvents, eventsListContainer);
+                }
+            }
+
+            // Вспомогательная функция отрисовки списка в контейнер (без открытия окна)
+            function renderEventListItems(items, container) {
+                if (items.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
+                } else {
+                    let html = '<div class="event-list">';
+                    items.forEach(item => {
+                        const date = parseDateKey(item.dateKey);
+                        const dateStr = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+                        html += `
+                            <div class="event-list-item">
+                                <div class="event-list-date">${dateStr}</div>
+                                <div class="event-list-title">${item.event.title}</div>
+                                ${item.event.description ? `<div class="event-list-description">${item.event.description}</div>` : ''}
+                                ${item.event.image ? `<img class="event-image" src="${item.event.image}" alt="${item.event.title}">` : ''}
+                                ${item.event.links && item.event.links.length ? `
+                                    <div class="event-list-links">
+                                        ${item.event.links.map(link => `
+                                            <a class="event-list-link" href="${link.url}" target="_blank" rel="noopener noreferrer">
+                                                ${link.emoji ? link.emoji + ' ' : ''}${link.text || 'Ссылка'}
+                                            </a>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                }
+            }
+
+            // Обработчики фильтров
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Убираем active у всех кнопок
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const filter = btn.dataset.filter;
+                    updateAllEventsList(filter);
+                });
+            });
+
+            // Применение выбранного месяца
+            applyMonthFilterBtn.addEventListener('click', () => {
+                const monthValue = monthPickerInput.value; // формат YYYY-MM
+                if (!monthValue) {
+                    alert('Выберите месяц');
+                    return;
+                }
+                const [year, month] = monthValue.split('-').map(Number);
+                // Создаём диапазон: первый и последний день месяца
+                const startDate = new Date(year, month - 1, 1);
+                const endDate = new Date(year, month, 0);
+                const allEvents = getAllEventsSorted();
+                const filtered = allEvents.filter(item => {
+                    const eventDate = parseDateKey(item.dateKey);
+                    return eventDate >= startDate && eventDate <= endDate;
+                });
+                renderEventListItems(filtered, eventsListContainer);
+            });
+
+            // Показываем окно
+            listModalOverlay.classList.add('active');
+            tg.BackButton.show();
+
+            // Сразу обновляем список для активного фильтра (по умолчанию "За месяц")
+            updateAllEventsList('month');
+        }
+
+        // Обработчики кнопок
+        nearestBtn.addEventListener('click', showNearestEvents);
+        allEventsBtn.addEventListener('click', showAllEvents);
+
+        // Закрытие спискового окна по кнопке Telegram BackButton
+        tg.onEvent('backButtonClicked', () => {
+            if (modalOverlay.classList.contains('active')) {
+                closeDateModal();
+            } else if (listModalOverlay.classList.contains('active')) {
+                closeListModal();
+            }
+        });
+
+        // ============================================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================================
         renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
 
         // ============================================================
-        // ДОПОЛНИТЕЛЬНО: ОБРАБОТКА ОРИЕНТАЦИИ И РАЗМЕРА
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ АНИМАЦИИ (при необходимости)
         // ============================================================
-        window.addEventListener('resize', () => {
-            // Можно перерисовать, но не обязательно
-        });
+        // (Можно добавить дополнительные анимации при необходимости)
     </script>
 </body>
 </html>
