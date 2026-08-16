@@ -88,13 +88,14 @@
             --my-games-checkbox-border-width: 1px;
             --my-games-checkbox-size: 16px;
             --my-games-checkbox-radius: 4px;
-            --my-games-checkbox-margin-top: 14px;   /* увеличенный отступ сверху */
+            --my-games-checkbox-margin-top: 14px;
             --my-games-checkbox-gap: 2px;
 
-            /* Стили для чекбокса "Мои игры" в окне "Все мероприятия" (галочка) */
+            /* Стили для чекбокса "Мои игры" в окне "Все мероприятия" */
             --filter-checkbox-size: 16px;
             --filter-checkbox-border-width: 1px;
             --filter-checkbox-color: #ffffff;
+            --filter-checkbox-gap: 6px;          /* расстояние между чекбоксом и текстом */
         }
 
         @media (prefers-color-scheme: dark) {
@@ -317,10 +318,33 @@
             vertical-align:middle;
         }
 
-        .filter-container { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; }
+        /* ============================================================
+               КОНТЕЙНЕР ФИЛЬТРОВ (выравнивание элементов)
+               ============================================================ */
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;                       /* расстояние между элементами */
+            margin-bottom: 15px;
+            align-items: center;             /* вертикальное центрирование всех элементов */
+            width: 100%;                     /* занимает всю ширину родителя */
+            padding-left: 8px;               /* отступ слева, симметричный правому */
+            padding-right: 8px;              /* отступ справа */
+            box-sizing: border-box;
+        }
+
         .filter-btn {
-            padding:8px 12px; border:none; border-radius:20px; background:var(--filter-btn-bg); color:var(--filter-btn-text);
-            cursor:pointer; font-size:0.85rem; transition: background-color 0.2s ease, color 0.2s ease; white-space:nowrap;
+            padding:8px 12px;
+            border:none;
+            border-radius:20px;
+            background:var(--filter-btn-bg);
+            color:var(--filter-btn-text);
+            cursor:pointer;
+            font-size:0.85rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            white-space:nowrap;
+            line-height: 1;                  /* фиксируем высоту строки */
+            font-family: inherit;
         }
         .filter-btn.active { background:var(--filter-btn-active-bg); color:var(--filter-btn-active-text); }
 
@@ -328,62 +352,37 @@
                ЧЕКБОКС "МОИ ИГРЫ" В ФИЛЬТРЕ "ВСЕ МЕРОПРИЯТИЯ"
                ============================================================ */
         .filter-my-events {
-            /* Отображение: inline-flex, чтобы элементы располагались в строку */
             display: inline-flex;
-            /* Выравнивание по центру по вертикали */
-            align-items: center;
-            /* Промежуток между чекбоксом и текстом */
-            gap: 6px;
-            /* Курсор указателя */
+            align-items: center;              /* вертикальное центрирование контента */
+            gap: var(--filter-checkbox-gap);  /* отступ между чекбоксом и текстом */
             cursor: pointer;
-            /* Шрифт идентичен фильтр-кнопкам: размер 0.85rem */
-            font-size: 0.85rem;
-            /* Наследуем шрифт от родителя */
+            font-size: 0.85rem;               /* тот же размер, что у кнопок */
             font-family: inherit;
-            /* Цвет текста такой же, как у кнопок фильтра */
             color: var(--filter-btn-text);
-            /* Запрет выделения текста */
             user-select: none;
-            /* Запрет переноса строки */
             white-space: nowrap;
-            /* Отступ слева автоматически, чтобы прижаться к правому краю */
-            margin-left: auto;
-            /* Убираем лишние отступы сверху/снизу, которые могут ломать вертикальное выравнивание */
-            margin-top: 0;
-            margin-bottom: 0;
-            /* Высота строки, чтобы соответствовать кнопкам фильтра */
-            line-height: 1;
+            margin-left: auto;                /* прижимаем к правому краю */
+            margin-right: 0;                  /* отступ справа уже учтён в padding контейнера */
+            line-height: 1;                   /* убираем лишнюю высоту строки */
         }
 
         .filter-my-events input[type="checkbox"] {
-            /* Убираем стандартное отображение */
             appearance: none;
             -webkit-appearance: none;
-            /* Размер */
             width: var(--filter-checkbox-size);
             height: var(--filter-checkbox-size);
-            /* Тонкая белая рамка */
             border: var(--filter-checkbox-border-width) solid #fff;
-            /* Скругление углов */
             border-radius: 4px;
-            /* Прозрачный фон по умолчанию */
             background: transparent;
-            /* Курсор указателя */
             cursor: pointer;
-            /* Плавный переход цвета */
             transition: background-color 0.2s ease, border-color 0.2s ease;
-            /* Убираем внешние отступы */
             margin: 0;
-            /* Убираем сжатие внутри флекса */
             flex-shrink: 0;
-            /* Относительное позиционирование для галочки */
             position: relative;
-            /* Выравнивание по центру относительно текста */
             vertical-align: middle;
         }
 
         .filter-my-events input[type="checkbox"]:checked {
-            /* Лёгкая подсветка при активации */
             background-color: rgba(255,255,255,0.2);
             border-color: #fff;
         }
@@ -396,24 +395,31 @@
             top: 1px;
             width: 5px;
             height: 9px;
-            /* Толщина линий галочки: 1.5px для легкости */
             border: solid #fff;
             border-width: 0 1.5px 1.5px 0;
-            /* Несимметричный наклон для естественного вида */
             transform: rotate(42deg);
-            /* Лёгкая тень для объёма */
             box-shadow: 1px 1px 0 rgba(0,0,0,0.1);
         }
 
         .month-picker-container,
         .status-city-container {
-            display:none; margin-bottom:15px; gap:8px; align-items:center; flex-wrap:wrap;
+            display:none;
+            margin-bottom:15px;
+            gap:8px;
+            align-items:center;
+            flex-wrap:wrap;
+            width: 100%;                     /* занимает всю ширину */
+            padding-left: 8px;
+            padding-right: 8px;
+            box-sizing: border-box;
         }
         .month-picker-container.visible,
         .status-city-container.visible { display:flex; }
         .picker-select {
             background:var(--month-input-bg); color:var(--month-input-text); border:var(--month-input-border);
             border-radius:8px; padding:6px 10px; font-size:0.9rem; cursor:pointer; outline:none;
+            flex: 1 1 0;                     /* растягиваем селекты, чтобы занять доступное место */
+            min-width: 0;
         }
         .picker-select:focus { border-color:var(--calendar-accent); }
         .apply-btn {
@@ -464,11 +470,9 @@
             align-items: center;
             background: var(--tg-secondary-bg-color);
         }
-        .map-header h3 {
-            color: #1E9F57;
-            margin: 0;
-        }
+        .map-header h3 { color: #1E9F57; margin: 0; }
 
+        /* Стили для маркеров карты, легенды и чекбокса карты (оставлены без изменений) */
         .custom-flag-marker {
             display: flex;
             flex-direction: column;
@@ -478,12 +482,7 @@
             transition: transform 0.2s ease;
         }
         .custom-flag-marker:hover { transform: scale(1.1); }
-        .flag-pole {
-            width: 2px;
-            height: var(--flag-pole-height);
-            background: #333;
-            border-radius: 1px;
-        }
+        .flag-pole { width: 2px; height: var(--flag-pole-height); background: #333; border-radius: 1px; }
         .flag-canvas {
             width: var(--flag-width);
             height: var(--flag-height);
@@ -510,13 +509,8 @@
             clip-path: none;
             border-radius: 2px;
         }
-        .custom-flag-marker.plan-flag .flag-pole {
-            background: #7f8c8d;
-        }
-        .custom-flag-marker.plan-flag .flag-count {
-            background: #7f8c8d;
-            color: #fff;
-        }
+        .custom-flag-marker.plan-flag .flag-pole { background: #7f8c8d; }
+        .custom-flag-marker.plan-flag .flag-count { background: #7f8c8d; color: #fff; }
 
         .play-label {
             font-size: 0.8rem;
@@ -528,9 +522,7 @@
             margin-bottom: 2px;
         }
 
-        .blink-flag .flag-canvas {
-            animation: blinkFlag var(--blink-duration) infinite;
-        }
+        .blink-flag .flag-canvas { animation: blinkFlag var(--blink-duration) infinite; }
 
         @keyframes blink {
             0%, 100% { opacity: 1; }
@@ -564,9 +556,7 @@
             cursor: pointer;
             transition: opacity 0.2s ease;
         }
-        .map-legend-item.disabled {
-            opacity: 0.4;
-        }
+        .map-legend-item.disabled { opacity: 0.4; }
         .legend-flag {
             width: 16px;
             height: 14px;
@@ -577,9 +567,6 @@
         }
         .legend-flag.plan { background: #bdc3c7; border: 1px dashed #7f8c8d; clip-path: none; border-radius: 2px; }
 
-        /* ============================================================
-               ЧЕКБОКС "МОИ ИГРЫ" В ЛЕГЕНДЕ КАРТЫ
-               ============================================================ */
         .map-legend-checkbox {
             display: flex;
             align-items: center;
