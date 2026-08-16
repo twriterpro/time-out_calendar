@@ -834,6 +834,28 @@ function getMergedEvents() {
             return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         }
 
+
+        // ============================================================
+// ВРЕМЕННАЯ ЗАГЛУШКА (до финального деплоя)
+// ============================================================
+const ALLOWED_USER_IDS = [1340734814]; // замените на ваш ID (можно несколько через запятую)
+const currentUserId = tg.initDataUnsafe?.user?.id;
+
+if (!currentUserId || !ALLOWED_USER_IDS.includes(currentUserId)) {
+    // Если пользователь не разрешён — показываем заглушку
+    document.body.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:center; height:100vh; font-family: sans-serif; color: #999;">
+            <div style="text-align:center;">
+                <h2 style="font-size:1.5rem; margin-bottom:10px;">Приложение будет доступно позже</h2>
+            </div>
+        </div>
+    `;
+    // Прерываем выполнение остального кода
+    throw new Error('Access denied');
+}
+// ============================================================
+        
+        
         function populateSelects() {
             monthSelect.innerHTML = '';
             months.forEach((m, i) => {
