@@ -95,7 +95,7 @@
             --filter-checkbox-size: 16px;
             --filter-checkbox-border-width: 1px;
             --filter-checkbox-color: #ffffff;
-            --filter-checkbox-gap: 6px;          /* расстояние между чекбоксом и текстом */
+            --filter-checkbox-gap: 6px;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -324,12 +324,12 @@
         .filter-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;                       /* расстояние между элементами */
+            gap: 8px;                        /* расстояние между элементами */
             margin-bottom: 15px;
-            align-items: center;             /* вертикальное центрирование всех элементов */
-            width: 100%;                     /* занимает всю ширину родителя */
-            padding-left: 8px;               /* отступ слева, симметричный правому */
-            padding-right: 8px;              /* отступ справа */
+            align-items: center;              /* вертикальное центрирование всех элементов */
+            width: 100%;                      /* занимает всю ширину родителя */
+            padding-left: 0;                  /* УБРАН ЛЕВЫЙ ОТСТУП, чтобы левая граница совпадала с селектами */
+            padding-right: 8px;
             box-sizing: border-box;
         }
 
@@ -361,8 +361,8 @@
             color: var(--filter-btn-text);
             user-select: none;
             white-space: nowrap;
-            margin-left: auto;                /* прижимаем к правому краю */
-            margin-right: 0;                  /* отступ справа уже учтён в padding контейнера */
+            margin-left: 0;                   /* УБРАНО auto, чтобы элемент примыкал к левому краю контейнера */
+            margin-right: 0;
             line-height: 1;                   /* убираем лишнюю высоту строки */
         }
 
@@ -387,7 +387,6 @@
             border-color: #fff;
         }
 
-        /* Галочка – лёгкая, несимметричная */
         .filter-my-events input[type="checkbox"]:checked::after {
             content: '';
             position: absolute;
@@ -408,8 +407,8 @@
             gap:8px;
             align-items:center;
             flex-wrap:wrap;
-            width: 100%;                     /* занимает всю ширину */
-            padding-left: 8px;
+            width: 100%;                      /* занимает всю ширину */
+            padding-left: 0;                  /* левый отступ 0, чтобы выпадающие списки примыкали к левому краю */
             padding-right: 8px;
             box-sizing: border-box;
         }
@@ -418,7 +417,7 @@
         .picker-select {
             background:var(--month-input-bg); color:var(--month-input-text); border:var(--month-input-border);
             border-radius:8px; padding:6px 10px; font-size:0.9rem; cursor:pointer; outline:none;
-            flex: 1 1 0;                     /* растягиваем селекты, чтобы занять доступное место */
+            flex: 1 1 0;                      /* растягиваем селекты, чтобы занять доступное место */
             min-width: 0;
         }
         .picker-select:focus { border-color:var(--calendar-accent); }
@@ -429,12 +428,82 @@
         }
         .apply-btn:active { transform:scale(0.95); opacity:0.8; }
 
+        /* ============================================================
+               МУЛЬТИСЕЛЕКТ (кастомный выпадающий список с чекбоксами)
+               ============================================================ */
+        .multi-select {
+            position: relative;
+            flex: 1 1 0;
+            min-width: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        .multi-select-header {
+            background: var(--month-input-bg);
+            color: var(--month-input-text);
+            border: var(--month-input-border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: border-color 0.2s ease;
+        }
+        .multi-select-header:hover { border-color: var(--calendar-accent); }
+        .multi-select-header .arrow {
+            margin-left: 8px;
+            font-size: 0.7rem;
+            transition: transform 0.2s ease;
+            color: var(--calendar-muted);
+        }
+        .multi-select.open .multi-select-header .arrow { transform: rotate(180deg); }
+
+        .multi-select-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--month-input-bg);
+            border: 1px solid var(--month-input-border);
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .multi-select.open .multi-select-options { display: block; }
+
+        .multi-select-option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: var(--month-input-text);
+        }
+        .multi-select-option:hover { background-color: var(--calendar-day-hover); }
+        .multi-select-option input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--calendar-accent);
+            cursor: pointer;
+        }
+
         .list-modal-overlay .modal-content {
             transform: translateY(100px); opacity:0;
             transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease;
         }
         .list-modal-overlay.active .modal-content { transform: translateY(0); opacity:1; }
 
+        /* Остальные стили (карта, глобус, легенда и т.д.) остаются без изменений */
         .globe-btn {
             background: none;
             border: none;
@@ -449,7 +518,6 @@
             align-items: center;
             justify-content: center;
         }
-
         .map-modal .modal-content {
             width: 90%;
             max-width: 600px;
@@ -463,179 +531,34 @@
             border-radius: 0 0 var(--calendar-radius) var(--calendar-radius);
             position: relative;
         }
-        .map-header {
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--tg-secondary-bg-color);
-        }
+        .map-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; background: var(--tg-secondary-bg-color); }
         .map-header h3 { color: #1E9F57; margin: 0; }
 
-        /* Стили для маркеров карты, легенды и чекбокса карты (оставлены без изменений) */
-        .custom-flag-marker {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            filter: drop-shadow(var(--flag-shadow));
-            transition: transform 0.2s ease;
-        }
+        /* Стили для маркеров карты, легенды и чекбокса карты (сокращённо, но всё включено) */
+        .custom-flag-marker { display: flex; flex-direction: column; align-items: center; cursor: pointer; filter: drop-shadow(var(--flag-shadow)); transition: transform 0.2s ease; }
         .custom-flag-marker:hover { transform: scale(1.1); }
         .flag-pole { width: 2px; height: var(--flag-pole-height); background: #333; border-radius: 1px; }
-        .flag-canvas {
-            width: var(--flag-width);
-            height: var(--flag-height);
-            background: linear-gradient(135deg, var(--flag-primary-color) 0%, var(--flag-secondary-color) 100%);
-            clip-path: polygon(0 0, 100% 50%, 0 100%);
-            margin-left: -2px;
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-        .flag-count {
-            font-size: 10px;
-            font-weight: bold;
-            color: #fff;
-            background: #e74c3c;
-            border-radius: 10px;
-            padding: 2px 5px;
-            margin-top: 2px;
-            white-space: nowrap;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        }
-
-        .custom-flag-marker.plan-flag .flag-canvas {
-            background: #bdc3c7;
-            border: 1px dashed #7f8c8d;
-            clip-path: none;
-            border-radius: 2px;
-        }
+        .flag-canvas { width: var(--flag-width); height: var(--flag-height); background: linear-gradient(135deg, var(--flag-primary-color) 0%, var(--flag-secondary-color) 100%); clip-path: polygon(0 0, 100% 50%, 0 100%); margin-left: -2px; box-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .flag-count { font-size: 10px; font-weight: bold; color: #fff; background: #e74c3c; border-radius: 10px; padding: 2px 5px; margin-top: 2px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .custom-flag-marker.plan-flag .flag-canvas { background: #bdc3c7; border: 1px dashed #7f8c8d; clip-path: none; border-radius: 2px; }
         .custom-flag-marker.plan-flag .flag-pole { background: #7f8c8d; }
         .custom-flag-marker.plan-flag .flag-count { background: #7f8c8d; color: #fff; }
-
-        .play-label {
-            font-size: 0.8rem;
-            font-weight: bold;
-            color: #2ecc71;
-            text-shadow: 0 0 4px rgba(0,0,0,0.5);
-            animation: blink var(--blink-duration) infinite;
-            white-space: nowrap;
-            margin-bottom: 2px;
-        }
-
+        .play-label { font-size: 0.8rem; font-weight: bold; color: #2ecc71; text-shadow: 0 0 4px rgba(0,0,0,0.5); animation: blink var(--blink-duration) infinite; white-space: nowrap; margin-bottom: 2px; }
         .blink-flag .flag-canvas { animation: blinkFlag var(--blink-duration) infinite; }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.2; }
-        }
-        @keyframes blinkFlag {
-            0%, 100% { box-shadow: 0 0 5px #2ecc71; }
-            50% { box-shadow: 0 0 15px #2ecc71; }
-        }
-
-        .map-legend {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255,255,255,0.95);
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-family: var(--font-family);
-            font-size: 0.8rem;
-            color: #333;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            z-index: 1000;
-            pointer-events: auto;
-            user-select: none;
-        }
-        .map-legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin: 5px 0;
-            cursor: pointer;
-            transition: opacity 0.2s ease;
-        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+        @keyframes blinkFlag { 0%, 100% { box-shadow: 0 0 5px #2ecc71; } 50% { box-shadow: 0 0 15px #2ecc71; } }
+        .map-legend { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.95); border-radius: 8px; padding: 8px 10px; font-family: var(--font-family); font-size: 0.8rem; color: #333; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 1000; pointer-events: auto; user-select: none; }
+        .map-legend-item { display: flex; align-items: center; gap: 6px; margin: 5px 0; cursor: pointer; transition: opacity 0.2s ease; }
         .map-legend-item.disabled { opacity: 0.4; }
-        .legend-flag {
-            width: 16px;
-            height: 14px;
-            background: linear-gradient(135deg, var(--flag-primary-color) 0%, var(--flag-secondary-color) 100%);
-            clip-path: polygon(0 0, 100% 50%, 0 100%);
-            margin-left: -2px;
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
+        .legend-flag { width: 16px; height: 14px; background: linear-gradient(135deg, var(--flag-primary-color) 0%, var(--flag-secondary-color) 100%); clip-path: polygon(0 0, 100% 50%, 0 100%); margin-left: -2px; box-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
         .legend-flag.plan { background: #bdc3c7; border: 1px dashed #7f8c8d; clip-path: none; border-radius: 2px; }
-
-        .map-legend-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: var(--my-games-checkbox-margin-top);
-            padding-top: 8px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            cursor: pointer;
-            font-size: 0.8rem;
-            color: inherit;
-            user-select: none;
-            transition: opacity 0.2s ease;
-            margin-left: 0;
-        }
-        .map-legend-checkbox input[type="checkbox"] {
-            appearance: none;
-            -webkit-appearance: none;
-            width: var(--my-games-checkbox-size);
-            height: var(--my-games-checkbox-size);
-            border: var(--my-games-checkbox-border-width) solid var(--my-games-checkbox-color);
-            border-radius: var(--my-games-checkbox-radius);
-            background: transparent;
-            cursor: pointer;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
-            margin: 0;
-            flex-shrink: 0;
-            box-sizing: border-box;
-            padding: var(--my-games-checkbox-gap);
-            background-clip: content-box;
-        }
-        .map-legend-checkbox input[type="checkbox"]:checked {
-            background-color: var(--my-games-checkbox-color);
-            border-color: var(--my-games-checkbox-color);
-        }
-
-        .ol-popup {
-            position: absolute;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border-radius: 12px;
-            padding: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: var(--font-family);
-            color: #333;
-            min-width: 150px;
-            z-index: 999;
-        }
-        .ol-popup:after, .ol-popup:before {
-            top: 100%;
-            border: solid transparent;
-            content: " ";
-            height: 0;
-            width: 0;
-            position: absolute;
-            pointer-events: none;
-        }
-        .ol-popup:after {
-            border-top-color: white;
-            border-width: 10px;
-            left: 48px;
-            margin-left: -10px;
-        }
-        .ol-popup:before {
-            border-top-color: #cccccc;
-            border-width: 11px;
-            left: 48px;
-            margin-left: -11px;
-        }
+        .map-legend-checkbox { display: flex; align-items: center; gap: 6px; margin-top: var(--my-games-checkbox-margin-top); padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); cursor: pointer; font-size: 0.8rem; color: inherit; user-select: none; transition: opacity 0.2s ease; margin-left: 0; }
+        .map-legend-checkbox input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: var(--my-games-checkbox-size); height: var(--my-games-checkbox-size); border: var(--my-games-checkbox-border-width) solid var(--my-games-checkbox-color); border-radius: var(--my-games-checkbox-radius); background: transparent; cursor: pointer; transition: background-color 0.2s ease, border-color 0.2s ease; margin: 0; flex-shrink: 0; box-sizing: border-box; padding: var(--my-games-checkbox-gap); background-clip: content-box; }
+        .map-legend-checkbox input[type="checkbox"]:checked { background-color: var(--my-games-checkbox-color); border-color: var(--my-games-checkbox-color); }
+        .ol-popup { position: absolute; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 12px; padding: 12px; max-height: 200px; overflow-y: auto; font-family: var(--font-family); color: #333; min-width: 150px; z-index: 999; }
+        .ol-popup:after, .ol-popup:before { top: 100%; border: solid transparent; content: " "; height: 0; width: 0; position: absolute; pointer-events: none; }
+        .ol-popup:after { border-top-color: white; border-width: 10px; left: 48px; margin-left: -10px; }
+        .ol-popup:before { border-top-color: #cccccc; border-width: 11px; left: 48px; margin-left: -11px; }
 
         @media (max-width:480px) {
             .calendar-container { border-radius:12px; }
@@ -1283,7 +1206,7 @@
         }
 
         // ============================================================
-        // ОКНО "ВСЕ МЕРОПРИЯТИЯ" (исправлено дублирование и добавлен фильтр "Мои игры")
+        // ОКНО "ВСЕ МЕРОПРИЯТИЯ" (с мультиселектами)
         // ============================================================
         function openAllEvents() {
             listModalTitle.textContent = 'Все мероприятия';
@@ -1305,32 +1228,36 @@
                     <button class="apply-btn" id="applyMonthFilter">Применить</button>
                 </div>
                 <div class="status-city-container visible" id="statusCityContainer">
-                    <select class="picker-select" id="statusFilter">
-                        <option value="all">Все статусы</option>
-                        <option value="finish">Завершено</option>
-                        <option value="current">В процессе подготовки</option>
-                        <option value="play">Сейчас идет</option>
-                        <option value="closest">Ближайшие</option>
-                        <option value="plan">Планируемые</option>
-                    </select>
-                    <select class="picker-select" id="cityFilter">
-                        <option value="all">Все города</option>
-                        ${Object.entries(cityData).map(([code, city]) => `<option value="${code}">${city.name}</option>`).join('')}
-                    </select>
+                    <div class="multi-select" id="statusMultiSelect">
+                        <div class="multi-select-header">
+                            <span class="selected-text">Все статусы</span>
+                            <span class="arrow">▼</span>
+                        </div>
+                        <div class="multi-select-options"></div>
+                    </div>
+                    <div class="multi-select" id="cityMultiSelect">
+                        <div class="multi-select-header">
+                            <span class="selected-text">Все города</span>
+                            <span class="arrow">▼</span>
+                        </div>
+                        <div class="multi-select-options"></div>
+                    </div>
                 </div>
                 <div id="allEventsListContainer"></div>
             `;
 
+            // Ссылки на элементы
             const eventsListContainer = document.getElementById('allEventsListContainer');
             const filterButtons = document.querySelectorAll('#filterContainer .filter-btn');
             const monthPickerContainer = document.getElementById('monthPickerContainer');
             const pickerMonthSelect = document.getElementById('pickerMonthSelect');
             const pickerYearSelect = document.getElementById('pickerYearSelect');
             const applyMonthFilterBtn = document.getElementById('applyMonthFilter');
-            const statusFilter = document.getElementById('statusFilter');
-            const cityFilter = document.getElementById('cityFilter');
             const myEventsFilterCheckbox = document.getElementById('myEventsFilterCheckbox');
+            const statusMultiSelect = document.getElementById('statusMultiSelect');
+            const cityMultiSelect = document.getElementById('cityMultiSelect');
 
+            // Инициализация месяца/года (как раньше)
             const now = new Date();
             months.forEach((mName, idx) => {
                 const opt = document.createElement('option');
@@ -1347,45 +1274,45 @@
             }
             pickerYearSelect.value = now.getFullYear();
 
+            // Инициализация мультиселектов
+            initMultiSelect(statusMultiSelect, statusConfig, 'Все статусы', 'status');
+            initMultiSelect(cityMultiSelect, cityData, 'Все города', 'city');
+
             let currentFilter = 'month';
 
+            // Функция применения всех фильтров
             function applyAllFilters() {
                 const allMerged = getMergedEvents();
                 let filtered = allMerged;
 
+                // Фильтр по времени
                 const today = new Date();
                 today.setHours(0,0,0,0);
                 switch (currentFilter) {
                     case 'month': {
                         const endOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0);
-                        filtered = filtered.filter(ev => {
-                            return ev.dates.some(dateKey => {
-                                const d = parseDateKey(dateKey);
-                                return d >= today && d <= endOfMonth;
-                            });
-                        });
+                        filtered = filtered.filter(ev => ev.dates.some(dateKey => {
+                            const d = parseDateKey(dateKey);
+                            return d >= today && d <= endOfMonth;
+                        }));
                         break;
                     }
                     case 'half-year': {
                         const sixMonthsLater = new Date(today);
                         sixMonthsLater.setMonth(sixMonthsLater.getMonth()+6);
-                        filtered = filtered.filter(ev => {
-                            return ev.dates.some(dateKey => {
-                                const d = parseDateKey(dateKey);
-                                return d >= today && d <= sixMonthsLater;
-                            });
-                        });
+                        filtered = filtered.filter(ev => ev.dates.some(dateKey => {
+                            const d = parseDateKey(dateKey);
+                            return d >= today && d <= sixMonthsLater;
+                        }));
                         break;
                     }
                     case 'year': {
                         const oneYearLater = new Date(today);
                         oneYearLater.setFullYear(oneYearLater.getFullYear()+1);
-                        filtered = filtered.filter(ev => {
-                            return ev.dates.some(dateKey => {
-                                const d = parseDateKey(dateKey);
-                                return d >= today && d <= oneYearLater;
-                            });
-                        });
+                        filtered = filtered.filter(ev => ev.dates.some(dateKey => {
+                            const d = parseDateKey(dateKey);
+                            return d >= today && d <= oneYearLater;
+                        }));
                         break;
                     }
                     case 'specific': {
@@ -1393,30 +1320,26 @@
                         const selYear = parseInt(pickerYearSelect.value,10);
                         const startDate = new Date(selYear, selMonth, 1);
                         const endDate = new Date(selYear, selMonth + 1, 0);
-                        filtered = filtered.filter(ev => {
-                            return ev.dates.some(dateKey => {
-                                const d = parseDateKey(dateKey);
-                                return d >= startDate && d <= endDate;
-                            });
-                        });
+                        filtered = filtered.filter(ev => ev.dates.some(dateKey => {
+                            const d = parseDateKey(dateKey);
+                            return d >= startDate && d <= endDate;
+                        }));
                         break;
                     }
-                    case 'all': {
+                    case 'all':
                         break;
-                    }
                 }
 
-                const statusVal = statusFilter.value;
-                if (statusVal !== 'all') {
-                    filtered = filtered.filter(ev => {
-                        const eff = getEffectiveStatus(ev, ev.title);
-                        return eff === statusVal;
-                    });
+                // Фильтр по статусам (множественный)
+                const selectedStatuses = getSelectedValues(statusMultiSelect);
+                if (selectedStatuses.length > 0) {
+                    filtered = filtered.filter(ev => selectedStatuses.includes(getEffectiveStatus(ev, ev.title)));
                 }
 
-                const cityVal = cityFilter.value;
-                if (cityVal !== 'all') {
-                    filtered = filtered.filter(ev => ev.city === cityVal);
+                // Фильтр по городам (множественный)
+                const selectedCities = getSelectedValues(cityMultiSelect);
+                if (selectedCities.length > 0) {
+                    filtered = filtered.filter(ev => selectedCities.includes(ev.city));
                 }
 
                 // Фильтр "Мои игры"
@@ -1427,6 +1350,63 @@
                 eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
             }
 
+            // Функция инициализации мультиселекта
+            function initMultiSelect(container, sourceData, defaultText, type) {
+                const header = container.querySelector('.multi-select-header');
+                const optionsContainer = container.querySelector('.multi-select-options');
+                const selectedText = header.querySelector('.selected-text');
+
+                // Заполняем опции
+                optionsContainer.innerHTML = '';
+                Object.entries(sourceData).forEach(([key, value]) => {
+                    const label = type === 'status' ? value.name : value.name;
+                    const option = document.createElement('label');
+                    option.className = 'multi-select-option';
+                    option.innerHTML = `
+                        <input type="checkbox" value="${key}">
+                        <span>${label}</span>
+                    `;
+                    optionsContainer.appendChild(option);
+                });
+
+                // Обработчик клика по заголовку
+                header.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    container.classList.toggle('open');
+                });
+
+                // Обработчики изменения чекбоксов
+                optionsContainer.addEventListener('change', () => {
+                    const checkboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
+                    const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+                    if (selected.length === 0) {
+                        selectedText.textContent = defaultText;
+                    } else {
+                        const names = selected.map(val => {
+                            if (type === 'status') return statusConfig[val].name;
+                            else return cityData[val].name;
+                        });
+                        selectedText.textContent = names.join(', ');
+                    }
+                    // При изменении фильтров пересчитываем список
+                    applyAllFilters();
+                });
+
+                // Закрытие при клике вне
+                document.addEventListener('click', (e) => {
+                    if (!container.contains(e.target)) {
+                        container.classList.remove('open');
+                    }
+                });
+            }
+
+            // Функция получения выбранных значений из мультиселекта
+            function getSelectedValues(container) {
+                const checkboxes = container.querySelectorAll('.multi-select-options input[type="checkbox"]');
+                return Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+            }
+
+            // Обработчики кнопок фильтра
             filterButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     filterButtons.forEach(b => b.classList.remove('active'));
@@ -1441,6 +1421,7 @@
                 });
             });
 
+            // Обработчики селектов месяца/года
             pickerMonthSelect.addEventListener('change', () => {
                 if (currentFilter === 'specific') applyAllFilters();
             });
@@ -1452,10 +1433,9 @@
                 if (currentFilter === 'specific') applyAllFilters();
             });
 
-            statusFilter.addEventListener('change', applyAllFilters);
-            cityFilter.addEventListener('change', applyAllFilters);
             myEventsFilterCheckbox.addEventListener('change', applyAllFilters);
 
+            // Делегирование кликов по кнопкам "Подробнее"
             eventsListContainer.addEventListener('click', (e) => {
                 const btn = e.target.closest('.open-event-btn');
                 if (btn) {
