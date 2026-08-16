@@ -8,8 +8,9 @@
     <!-- Подключение Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- Шрифт для подписей на карте (по желанию) -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- OpenLayers CSS и JS (возвращаем реальную карту) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.2.1/ol.css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@v10.2.1/dist/ol.js"></script>
 
     <style>
         /* ============================================================
@@ -66,14 +67,14 @@
 
             /* Глобус */
             --globe-size: 36px;
-            --globe-animation-duration: 12s;
 
-            /* Параметры карты */
-            --map-bg: #aadaff;
-            --map-label-color: #333;
-            --map-label-shadow: 0 0 4px rgba(255,255,255,0.8);
-            --map-zoom-duration: 2.5s;
-            --map-zoom-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            /* Объемный флажок */
+            --flag-pole-height: 24px;
+            --flag-width: 20px;
+            --flag-height: 14px;
+            --flag-primary-color: #e74c3c;
+            --flag-secondary-color: #c0392b;
+            --flag-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
 
         @media (prefers-color-scheme: dark) {
@@ -111,9 +112,8 @@
                 --badge-border: 1px solid rgba(0,0,0,0.3);
                 --apply-btn-bg: var(--calendar-accent);
                 --apply-btn-text: #000000;
-                --map-bg: #1a2a3a;
-                --map-label-color: #fff;
-                --map-label-shadow: 0 0 4px rgba(0,0,0,0.8);
+                --flag-primary-color: #ff6b6b;
+                --flag-secondary-color: #d9534f;
             }
         }
 
@@ -329,9 +329,7 @@
         }
         .list-modal-overlay.active .modal-content { transform: translateY(0); opacity:1; }
 
-        /* ============================================================
-               ИКОНКА ГЛОБУСА (в стиле эмодзи 🌍)
-               ============================================================ */
+        /* Иконка глобуса: используем эмодзи без анимации */
         .globe-btn {
             background: none;
             border: none;
@@ -340,37 +338,25 @@
             height: var(--globe-size);
             padding: 0;
             -webkit-tap-highlight-color: transparent;
-            perspective: 500px;
-            display: inline-block;
-        }
-        .globe-icon-wrapper {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            animation: spinGlobe var(--globe-animation-duration) linear infinite;
-        }
-        .globe-svg {
-            width: 100%;
-            height: 100%;
-            display: block;
-            transform: rotateX(15deg);
-        }
-        @keyframes spinGlobe {
-            from { transform: rotateY(0deg) rotateX(15deg); }
-            to { transform: rotateY(360deg) rotateX(15deg); }
+            font-size: var(--globe-size);
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* ============================================================
-               МОДАЛЬНОЕ ОКНО КАРТЫ (стилизованная SVG-карта)
-               ============================================================ */
+        /* Модальное окно карты */
         .map-modal .modal-content {
             width: 90%;
             max-width: 600px;
             height: 70vh;
             padding: 0;
             overflow: hidden;
-            background: var(--calendar-modal-bg);
+        }
+        .map-container {
+            width: 100%;
+            height: 100%;
+            border-radius: 0 0 var(--calendar-radius) var(--calendar-radius);
         }
         .map-header {
             padding: 15px;
@@ -379,46 +365,80 @@
             align-items: center;
             background: var(--tg-secondary-bg-color);
         }
-        .map-header h3 { color: var(--calendar-text); margin: 0; }
+        .map-header h3 {
+            color: var(--calendar-text);
+            margin: 0;
+        }
 
-        .map-container {
-            position: relative;
-            width: 100%;
-            height: calc(100% - 50px);
-            overflow: hidden;
-            background: var(--map-bg);
+        /* Объемный флажок для маркеров */
+        .custom-flag-marker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            filter: drop-shadow(var(--flag-shadow));
+            transition: transform 0.2s ease;
         }
-        .world-map-svg {
-            width: 100%;
-            height: 100%;
-            display: block;
-            transition: transform var(--map-zoom-duration) var(--map-zoom-easing);
-            transform-origin: center center;
-            cursor: default;
+        .custom-flag-marker:hover { transform: scale(1.1); }
+        .flag-pole {
+            width: 2px;
+            height: var(--flag-pole-height);
+            background: #333;
+            border-radius: 1px;
         }
-        .map-label {
+        .flag-canvas {
+            width: var(--flag-width);
+            height: var(--flag-height);
+            background: linear-gradient(135deg, var(--flag-primary-color) 0%, var(--flag-secondary-color) 100%);
+            clip-path: polygon(0 0, 100% 50%, 0 100%);
+            margin-left: -2px;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .flag-count {
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+            background: #e74c3c;
+            border-radius: 10px;
+            padding: 2px 5px;
+            margin-top: 2px;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .ol-popup {
             position: absolute;
-            font-family: 'Roboto', sans-serif;
-            font-weight: 700;
-            color: var(--map-label-color);
-            text-shadow: var(--map-label-shadow);
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 12px;
+            padding: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: var(--font-family);
+            color: #333;
+            min-width: 150px;
+            z-index: 999;
+        }
+        .ol-popup:after, .ol-popup:before {
+            top: 100%;
+            border: solid transparent;
+            content: " ";
+            height: 0;
+            width: 0;
+            position: absolute;
             pointer-events: none;
-            transition: opacity 0.5s ease;
-            opacity: 0;
         }
-        .map-label.visible { opacity: 1; }
-        .map-label.oslo { left: 15%; top: 50%; font-size: 1.2rem; }
-        .map-label.south-island { left: 50%; top: 5%; font-size: 1.1rem; }
-        .map-label.moscow { left: 60%; top: 45%; font-size: 1.3rem; }
-
-        /* Начальное состояние карты (общий вид) */
-        .map-container.zoomed .world-map-svg {
-            transform: scale(4) translate(-20%, -10%);
+        .ol-popup:after {
+            border-top-color: white;
+            border-width: 10px;
+            left: 48px;
+            margin-left: -10px;
         }
-        .map-container.zoomed .map-label.oslo,
-        .map-container.zoomed .map-label.south-island,
-        .map-container.zoomed .map-label.moscow {
-            opacity: 1;
+        .ol-popup:before {
+            border-top-color: #cccccc;
+            border-width: 11px;
+            left: 48px;
+            margin-left: -11px;
         }
 
         @media (max-width:480px) {
@@ -437,9 +457,9 @@
             .badges-container { bottom:2px; }
             .badge { width:12px; height:12px; }
             .map-modal .modal-content { height: 80vh; }
-            .map-label.oslo { font-size: 1rem; }
-            .map-label.south-island { font-size: 0.9rem; }
-            .map-label.moscow { font-size: 1.1rem; }
+            .flag-pole { height: 20px; }
+            .flag-width { width: 16px; }
+            .flag-height { height: 12px; }
         }
     </style>
 </head>
@@ -453,30 +473,8 @@
             <select class="month-select" id="monthSelect"></select>
             <select class="year-select" id="yearSelect"></select>
             <button class="nav-btn" id="nextMonthBtn">›</button>
-            <!-- Глобус (🌍) с вращением -->
-            <button class="globe-btn" id="globeBtn" title="Карта мира">
-                <div class="globe-icon-wrapper">
-                    <svg class="globe-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Океан -->
-                        <circle cx="50" cy="50" r="45" fill="#1E90FF" />
-                        <!-- Материки (упрощённо, похоже на эмодзи) -->
-                        <g fill="#4CAF50">
-                            <!-- Европа/Африка -->
-                            <path d="M 65 20 C 70 22, 78 25, 80 35 C 82 45, 75 55, 70 60 C 65 65, 60 62, 58 55 C 55 45, 58 35, 62 28 Z"/>
-                            <!-- Азия -->
-                            <path d="M 70 15 C 80 12, 90 20, 92 35 C 93 45, 85 55, 78 58 C 75 60, 72 50, 74 40 C 76 30, 72 20, 70 15 Z"/>
-                            <!-- Северная Америка -->
-                            <path d="M 5 15 C 10 10, 25 12, 30 20 C 35 28, 30 40, 22 45 C 15 42, 10 35, 8 25 Z"/>
-                            <!-- Южная Америка -->
-                            <path d="M 25 50 C 30 52, 35 55, 38 62 C 40 70, 35 80, 30 85 C 25 80, 28 70, 25 62 Z"/>
-                            <!-- Австралия -->
-                            <path d="M 85 75 C 90 75, 95 80, 92 85 C 88 88, 82 85, 83 80 Z"/>
-                        </g>
-                        <!-- Блик -->
-                        <path d="M 15 30 A 40 40 0 0 1 75 12 A 45 45 0 0 0 20 38 Z" fill="rgba(255,255,255,0.3)" pointer-events="none"/>
-                    </svg>
-                </div>
-            </button>
+            <!-- Кнопка глобуса с эмодзи Земли (без анимации) -->
+            <button class="globe-btn" id="globeBtn" title="Карта мира">🌍</button>
         </div>
         <div class="weekdays">
             <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
@@ -523,42 +521,7 @@
                 <h3>Карта мероприятий</h3>
                 <button class="modal-close" id="mapModalCloseBtn">×</button>
             </div>
-            <div class="map-container" id="mapContainer">
-                <!-- Стилизованная SVG карта мира -->
-                <svg class="world-map-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                    <!-- Фон океана -->
-                    <rect width="100" height="100" fill="#aadaff" />
-                    <!-- Упрощённые континенты -->
-                    <g fill="#8BC34A" stroke="#558B2F" stroke-width="0.5">
-                        <!-- Северная Америка -->
-                        <path d="M 5 15 C 15 10, 30 12, 35 20 C 40 28, 32 40, 22 45 C 15 48, 8 40, 5 30 Z"/>
-                        <!-- Южная Америка -->
-                        <path d="M 25 50 C 32 52, 38 55, 40 62 C 42 70, 36 82, 30 88 C 25 82, 28 72, 25 62 Z"/>
-                        <!-- Европа -->
-                        <path d="M 60 15 C 65 12, 70 15, 72 22 C 74 30, 68 38, 60 40 C 55 38, 58 25, 60 15 Z"/>
-                        <!-- Африка -->
-                        <path d="M 62 38 C 70 40, 75 50, 73 62 C 70 75, 60 80, 55 75 C 50 70, 58 55, 62 38 Z"/>
-                        <!-- Азия -->
-                        <path d="M 70 10 C 80 8, 95 15, 97 30 C 98 45, 90 55, 80 55 C 75 50, 78 35, 72 25 Z"/>
-                        <!-- Австралия -->
-                        <path d="M 85 75 C 92 75, 98 80, 95 85 C 90 90, 82 88, 83 82 Z"/>
-                    </g>
-                    <!-- Города и метки (для зума) -->
-                    <!-- Москва -->
-                    <circle cx="68" cy="35" r="1.5" fill="#E53935" />
-                    <text x="69" y="34" font-size="3" fill="#333" font-weight="bold">Москва</text>
-                    <!-- Oslo -->
-                    <circle cx="58" cy="25" r="1.5" fill="#E53935" />
-                    <text x="56" y="24" font-size="3" fill="#333" font-weight="bold">Oslo</text>
-                    <!-- Южный остров (условно) -->
-                    <circle cx="68" cy="15" r="1.5" fill="#E53935" />
-                    <text x="69" y="14" font-size="3" fill="#333" font-weight="bold">Южный остров</text>
-                </svg>
-                <!-- HTML-метки для более чёткого отображения при зуме -->
-                <div class="map-label oslo">Oslo</div>
-                <div class="map-label south-island">Южный остров</div>
-                <div class="map-label moscow">Москва</div>
-            </div>
+            <div class="map-container" id="mapContainer"></div>
         </div>
     </div>
 
@@ -597,7 +560,7 @@
         tg.onEvent('themeChanged', applyTelegramTheme);
 
         // ============================================================
-        // СЕКЦИЯ: ГОРОДА (city) с GPS координатами для карты (необязательно)
+        // СЕКЦИЯ: ГОРОДА (city) с GPS координатами для карты
         // ============================================================
         const cityData = {
             'moscow':   { name: 'Москва',   lat: 55.7558, lon: 37.6173 },
@@ -726,7 +689,6 @@
                             guest: ev.guest,
                             status: ev.status,
                             description: ev.description,
-                            location: ev.location,
                             users: ev.users || [],
                             links: ev.links || []
                         });
@@ -768,7 +730,7 @@
         let currentDate = new Date(2025, 10, 1);
         let selectedDate = null;
         let selectedDayElement = null;
-        let mapZoomed = false;
+        let mapInstance = null;
 
         const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
         const START_YEAR = 2025;
@@ -978,6 +940,7 @@
             return getMergedEvents();
         }
 
+        // Функция создания HTML списка объединённых событий (без inline onclick)
         function createMergedEventsListHTML(mergedEvents) {
             if (mergedEvents.length === 0) {
                 return '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
@@ -1000,9 +963,7 @@
                         <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
                         ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
                         ${subtitleHtml}
-                        <div style="margin-top:8px;">
-                            <button class="action-btn" style="font-size:0.8rem; padding:5px 10px;" onclick="event.stopPropagation(); openEventFromList('${ev.title}')">Подробнее</button>
-                        </div>
+                        <button class="action-btn open-event-btn" style="margin-top:8px; font-size:0.8rem; padding:5px 10px;" data-title="${ev.title}">Подробнее</button>
                     </div>
                 `;
             });
@@ -1153,6 +1114,7 @@
                 eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
             }
 
+            // Обработчики фильтров
             filterButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     filterButtons.forEach(b => b.classList.remove('active'));
@@ -1192,6 +1154,15 @@
 
             statusFilter.addEventListener('change', applyAllFilters);
             cityFilter.addEventListener('change', applyAllFilters);
+
+            // Делегирование кликов по кнопкам "Подробнее"
+            eventsListContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('.open-event-btn');
+                if (btn) {
+                    const title = btn.dataset.title;
+                    openEventFromList(title);
+                }
+            });
 
             listModalOverlay.classList.add('active');
             tg.BackButton.show();
@@ -1243,7 +1214,7 @@
                             <div class="event-date-header">${dateStr}</div>
                             <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
                             ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
-                            <button class="action-btn" style="font-size:0.8rem; padding:5px 10px;" onclick="event.stopPropagation(); openEventFromList('${ev.title}')">Подробнее</button>
+                            <button class="action-btn open-event-btn" style="font-size:0.8rem; padding:5px 10px;" data-title="${ev.title}">Подробнее</button>
                         </div>
                     `;
                 });
@@ -1256,6 +1227,13 @@
 
             listModalTitle.textContent = 'Мои события';
             listModalBody.innerHTML = html;
+            // Делегирование кликов для кнопок "Подробнее"
+            listModalBody.addEventListener('click', (e) => {
+                const btn = e.target.closest('.open-event-btn');
+                if (btn) {
+                    openEventFromList(btn.dataset.title);
+                }
+            });
             listModalOverlay.classList.add('active');
             tg.BackButton.show();
         });
@@ -1316,7 +1294,7 @@
         });
 
         // ============================================================
-        // СЕКЦИЯ: КАРТА (стилизованная SVG с зумом)
+        // СЕКЦИЯ: КАРТА МИРА (OpenLayers) с учётом клубов
         // ============================================================
         globeBtn.addEventListener('click', openMapModal);
         mapModalCloseBtn.addEventListener('click', closeMapModal);
@@ -1324,17 +1302,108 @@
 
         function openMapModal() {
             mapModalOverlay.classList.add('active');
-            // Сброс зума
-            mapContainer.classList.remove('zoomed');
-            // Запускаем анимацию зума после небольшой паузы
-            setTimeout(() => {
-                mapContainer.classList.add('zoomed');
-            }, 100);
+            if (!mapInstance) {
+                // Создаём карту OpenLayers
+                mapInstance = new ol.Map({
+                    target: mapContainer,
+                    layers: [new ol.layer.Tile({ source: new ol.source.OSM() })],
+                    view: new ol.View({
+                        center: ol.proj.fromLonLat([37.6173, 55.7558]),
+                        zoom: 3
+                    }),
+                    controls: ol.control.defaults.defaults().extend([new ol.control.Zoom()])
+                });
+
+                // Группируем мероприятия по локациям (клуб или город)
+                const locationEventsMap = {};
+                const mergedEvents = getMergedEvents();
+                mergedEvents.forEach(merged => {
+                    let locationKey, coords, locationName;
+                    if (merged.club && clubData[merged.club]) {
+                        locationKey = 'club:' + merged.club;
+                        coords = [clubData[merged.club].lon, clubData[merged.club].lat];
+                        locationName = clubData[merged.club].name;
+                    } else {
+                        locationKey = 'city:' + merged.city;
+                        coords = [cityData[merged.city].lon, cityData[merged.city].lat];
+                        locationName = cityData[merged.city].name;
+                    }
+                    if (!locationEventsMap[locationKey]) {
+                        locationEventsMap[locationKey] = {
+                            coords: coords,
+                            name: locationName,
+                            events: []
+                        };
+                    }
+                    locationEventsMap[locationKey].events.push(merged);
+                });
+
+                // Добавляем маркеры
+                Object.values(locationEventsMap).forEach(loc => {
+                    const flagEl = document.createElement('div');
+                    flagEl.className = 'custom-flag-marker';
+                    flagEl.innerHTML = `
+                        <div class="flag-pole"></div>
+                        <div class="flag-canvas"></div>
+                        <div class="flag-count">${loc.events.length}</div>
+                    `;
+
+                    const marker = new ol.Overlay({
+                        position: ol.proj.fromLonLat(loc.coords),
+                        positioning: 'bottom-center',
+                        element: flagEl,
+                        stopEvent: false
+                    });
+                    mapInstance.addOverlay(marker);
+
+                    // Попап с информацией
+                    const popupElement = document.createElement('div');
+                    popupElement.className = 'ol-popup';
+                    popupElement.innerHTML = `<strong>${loc.name}</strong><br>Мероприятий: ${loc.events.length}`;
+                    loc.events.forEach(ev => {
+                        const datesStr = ev.dates.length > 1
+                            ? `${formatDateForDisplay(ev.dates[0])} - ${formatDateForDisplay(ev.dates[ev.dates.length-1])}`
+                            : formatDateForDisplay(ev.dates[0]);
+                        popupElement.innerHTML += `
+                            <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
+                                <span style="background:${getStatusConfig(ev.status).color}; display:inline-block; width:10px; height:10px; border-radius:50%;"></span>
+                                <strong>${ev.title}</strong><br>
+                                <small>${datesStr}</small><br>
+                                ${ev.description ? `<small>${ev.description}</small><br>` : ''}
+                                ${ev.links && ev.links.length ? ev.links.map(link => `<a href="${link.url}" target="_blank" rel="noopener noreferrer" style="color: #2481cc;">Перейти к теме</a>`).join('<br>') : ''}
+                            </div>
+                        `;
+                    });
+
+                    const popup = new ol.Overlay({
+                        element: popupElement,
+                        positioning: 'bottom-center',
+                        offset: [0, -20]
+                    });
+                    mapInstance.addOverlay(popup);
+
+                    flagEl.addEventListener('click', () => {
+                        popup.setPosition(marker.getPosition());
+                    });
+                    mapInstance.on('click', () => {
+                        popup.setPosition(undefined);
+                    });
+                });
+
+                // Анимация приближения
+                setTimeout(() => {
+                    mapInstance.getView().animate({
+                        center: ol.proj.fromLonLat([37.6173, 55.7558]),
+                        zoom: 5,
+                        duration: 2000
+                    });
+                }, 500);
+            }
+            setTimeout(() => mapInstance.updateSize(), 100);
         }
 
         function closeMapModal() {
             mapModalOverlay.classList.remove('active');
-            mapContainer.classList.remove('zoomed');
         }
 
         // ============================================================
