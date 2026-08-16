@@ -660,7 +660,7 @@
         const statusConfig = {
             'finish':   { name: 'Завершено',  color: '#e74c3c', svg: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` },
             'current':  { name: 'В процессе подготовки', color: '#f1c40f', svg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>` },
-            'play':     { name: 'Играем сейчас', color: '#2ecc71', svg: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>` },
+            'play':     { name: 'Сейчас идет', color: '#2ecc71', svg: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>` },
             'closest':  { name: 'Ближайшие', color: '#9b59b6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.8 2.3 7.2-6.3-4.6L5.7 21.2 8 14 2 9.2h7.6z"/></svg>` },
             'plan':     { name: 'Планируемые', color: '#95a5a6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>` }
         };
@@ -1094,179 +1094,208 @@ function getMergedEvents() {
         // ============================================================
         // ОКНО "ВСЕ МЕРОПРИЯТИЯ" (исправлено закрытие)
         // ============================================================
-        function openAllEvents() {
-            listModalTitle.textContent = 'Все мероприятия';
-            listModalBody.innerHTML = `
-                <div class="filter-container" id="filterContainer">
-                    <button class="filter-btn active" data-filter="month">За месяц</button>
-                    <button class="filter-btn" data-filter="half-year">За полгода</button>
-                    <button class="filter-btn" data-filter="year">За год</button>
-                    <button class="filter-btn" data-filter="specific">Выбор месяца</button>
-                    <button class="filter-btn" data-filter="all">За все время</button>
-                </div>
-                <div class="month-picker-container" id="monthPickerContainer">
-                    <select class="picker-select" id="pickerMonthSelect"></select>
-                    <select class="picker-select" id="pickerYearSelect"></select>
-                    <button class="apply-btn" id="applyMonthFilter">Применить</button>
-                </div>
-                <div class="status-city-container visible" id="statusCityContainer">
-                    <select class="picker-select" id="statusFilter">
-                        <option value="all">Все статусы</option>
-                        <option value="finish">Завершено</option>
-                        <option value="current">В процессе подготовки</option>
-                        <option value="play">Играем сейчас</option>
-                        <option value="closest">Ближайшие</option>
-                        <option value="plan">Планируемые</option>
-                    </select>
-                    <select class="picker-select" id="cityFilter">
-                        <option value="all">Все города</option>
-                        ${Object.entries(cityData).map(([code, city]) => `<option value="${code}">${city.name}</option>`).join('')}
-                    </select>
-                </div>
-                <div id="allEventsListContainer"></div>
-            `;
+        // ============================================================
+// ОКНО "ВСЕ МЕРОПРИЯТИЯ" (исправлена логика фильтра "Выбор месяца")
+// ============================================================
+function openAllEvents() {
+    listModalTitle.textContent = 'Все мероприятия';
+    listModalBody.innerHTML = `
+        <div class="filter-container" id="filterContainer">
+            <button class="filter-btn active" data-filter="month">За месяц</button>
+            <button class="filter-btn" data-filter="half-year">За полгода</button>
+            <button class="filter-btn" data-filter="year">За год</button>
+            <button class="filter-btn" data-filter="specific">Выбор месяца</button>
+            <button class="filter-btn" data-filter="all">За все время</button>
+        </div>
+        <div class="month-picker-container" id="monthPickerContainer">
+            <select class="picker-select" id="pickerMonthSelect"></select>
+            <select class="picker-select" id="pickerYearSelect"></select>
+            <button class="apply-btn" id="applyMonthFilter">Применить</button>
+        </div>
+        <div class="status-city-container visible" id="statusCityContainer">
+            <select class="picker-select" id="statusFilter">
+                <option value="all">Все статусы</option>
+                <option value="finish">Завершено</option>
+                <option value="current">В процессе подготовки</option>
+                <option value="play">Сейчас идет</option>
+                <option value="closest">Ближайшие</option>
+                <option value="plan">Планируемые</option>
+            </select>
+            <select class="picker-select" id="cityFilter">
+                <option value="all">Все города</option>
+                ${Object.entries(cityData).map(([code, city]) => `<option value="${code}">${city.name}</option>`).join('')}
+            </select>
+        </div>
+        <div id="allEventsListContainer"></div>
+    `;
 
-            const eventsListContainer = document.getElementById('allEventsListContainer');
-            const filterButtons = document.querySelectorAll('#filterContainer .filter-btn');
-            const monthPickerContainer = document.getElementById('monthPickerContainer');
-            const pickerMonthSelect = document.getElementById('pickerMonthSelect');
-            const pickerYearSelect = document.getElementById('pickerYearSelect');
-            const applyMonthFilterBtn = document.getElementById('applyMonthFilter');
-            const statusFilter = document.getElementById('statusFilter');
-            const cityFilter = document.getElementById('cityFilter');
+    const eventsListContainer = document.getElementById('allEventsListContainer');
+    const filterButtons = document.querySelectorAll('#filterContainer .filter-btn');
+    const monthPickerContainer = document.getElementById('monthPickerContainer');
+    const pickerMonthSelect = document.getElementById('pickerMonthSelect');
+    const pickerYearSelect = document.getElementById('pickerYearSelect');
+    const applyMonthFilterBtn = document.getElementById('applyMonthFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const cityFilter = document.getElementById('cityFilter');
 
-            const now = new Date();
-            months.forEach((mName, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.textContent = mName;
-                pickerMonthSelect.appendChild(opt);
-            });
-            pickerMonthSelect.value = now.getMonth();
-            for (let y = START_YEAR; y <= END_YEAR; y++) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
-                pickerYearSelect.appendChild(opt);
-            }
-            pickerYearSelect.value = now.getFullYear();
+    // Инициализация выпадающих списков месяца и года
+    const now = new Date();
+    months.forEach((mName, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = mName;
+        pickerMonthSelect.appendChild(opt);
+    });
+    pickerMonthSelect.value = now.getMonth();
+    for (let y = START_YEAR; y <= END_YEAR; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        pickerYearSelect.appendChild(opt);
+    }
+    pickerYearSelect.value = now.getFullYear();
 
-            let currentFilter = 'month';
+    let currentFilter = 'month'; // активный фильтр
 
-            function applyAllFilters() {
-                const allMerged = getMergedEvents();
-                let filtered = allMerged;
+    // Единая функция применения всех фильтров
+    function applyAllFilters() {
+        const allMerged = getMergedEvents();
+        let filtered = allMerged;
 
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                switch (currentFilter) {
-                    case 'month': {
-                        const endOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0);
-                        filtered = filtered.filter(ev => {
-                            return ev.dates.some(dateKey => {
-                                const d = parseDateKey(dateKey);
-                                return d >= today && d <= endOfMonth;
-                            });
-                        });
-                        break;
-                    }
-                    case 'half-year': {
-                        const sixMonthsLater = new Date(today);
-                        sixMonthsLater.setMonth(sixMonthsLater.getMonth()+6);
-                        filtered = filtered.filter(ev => {
-                            return ev.dates.some(dateKey => {
-                                const d = parseDateKey(dateKey);
-                                return d >= today && d <= sixMonthsLater;
-                            });
-                        });
-                        break;
-                    }
-                    case 'year': {
-                        const oneYearLater = new Date(today);
-                        oneYearLater.setFullYear(oneYearLater.getFullYear()+1);
-                        filtered = filtered.filter(ev => {
-                            return ev.dates.some(dateKey => {
-                                const d = parseDateKey(dateKey);
-                                return d >= today && d <= oneYearLater;
-                            });
-                        });
-                        break;
-                    }
-                    case 'all': break;
-                    case 'specific': break;
-                }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-                const statusVal = statusFilter.value;
-                if (statusVal !== 'all') {
-                    filtered = filtered.filter(ev => {
-                        const eff = getEffectiveStatus(ev, ev.title);
-                        return eff === statusVal;
+        // 1. Фильтр по времени
+        switch (currentFilter) {
+            case 'month': {
+                const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                filtered = filtered.filter(ev => {
+                    return ev.dates.some(dateKey => {
+                        const d = parseDateKey(dateKey);
+                        return d >= today && d <= endOfMonth;
                     });
-                }
-
-                const cityVal = cityFilter.value;
-                if (cityVal !== 'all') {
-                    filtered = filtered.filter(ev => ev.city === cityVal);
-                }
-
-                eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
-            }
-
-            filterButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    filterButtons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentFilter = btn.dataset.filter;
-                    if (currentFilter === 'specific') {
-                        monthPickerContainer.classList.add('visible');
-                    } else {
-                        monthPickerContainer.classList.remove('visible');
-                    }
-                    applyAllFilters();
                 });
-            });
-
-            applyMonthFilterBtn.addEventListener('click', () => {
-                const selMonth = parseInt(pickerMonthSelect.value,10);
-                const selYear = parseInt(pickerYearSelect.value,10);
+                break;
+            }
+            case 'half-year': {
+                const sixMonthsLater = new Date(today);
+                sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+                filtered = filtered.filter(ev => {
+                    return ev.dates.some(dateKey => {
+                        const d = parseDateKey(dateKey);
+                        return d >= today && d <= sixMonthsLater;
+                    });
+                });
+                break;
+            }
+            case 'year': {
+                const oneYearLater = new Date(today);
+                oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+                filtered = filtered.filter(ev => {
+                    return ev.dates.some(dateKey => {
+                        const d = parseDateKey(dateKey);
+                        return d >= today && d <= oneYearLater;
+                    });
+                });
+                break;
+            }
+            case 'specific': {
+                // ВАЖНОЕ ИЗМЕНЕНИЕ: при выборе "Выбор месяца" фильтруем по значениям селектов
+                const selMonth = parseInt(pickerMonthSelect.value, 10);
+                const selYear = parseInt(pickerYearSelect.value, 10);
                 const startDate = new Date(selYear, selMonth, 1);
-                const endDate = new Date(selYear, selMonth+1, 0);
-                const allMerged = getMergedEvents();
-                let filtered = allMerged.filter(ev => {
+                const endDate = new Date(selYear, selMonth + 1, 0);
+                filtered = filtered.filter(ev => {
                     return ev.dates.some(dateKey => {
                         const d = parseDateKey(dateKey);
                         return d >= startDate && d <= endDate;
                     });
                 });
-                const statusVal = statusFilter.value;
-                if (statusVal !== 'all') {
-                    filtered = filtered.filter(ev => {
-                        const eff = getEffectiveStatus(ev, ev.title);
-                        return eff === statusVal;
-                    });
-                }
-                const cityVal = cityFilter.value;
-                if (cityVal !== 'all') {
-                    filtered = filtered.filter(ev => ev.city === cityVal);
-                }
-                eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
-            });
-
-            statusFilter.addEventListener('change', applyAllFilters);
-            cityFilter.addEventListener('change', applyAllFilters);
-
-            eventsListContainer.addEventListener('click', (e) => {
-                const btn = e.target.closest('.open-event-btn');
-                if (btn) {
-                    openEventFromList(btn.dataset.title);
-                }
-            });
-
-            listModalOverlay.classList.add('active');
-            tg.BackButton.show();
-            applyAllFilters();
+                break;
+            }
+            case 'all': {
+                // Ничего не делаем, все события уже в filtered
+                break;
+            }
         }
 
+        // 2. Фильтр по статусу (если выбран конкретный статус)
+        const statusVal = statusFilter.value;
+        if (statusVal !== 'all') {
+            filtered = filtered.filter(ev => {
+                const eff = getEffectiveStatus(ev, ev.title);
+                return eff === statusVal;
+            });
+        }
+
+        // 3. Фильтр по городу
+        const cityVal = cityFilter.value;
+        if (cityVal !== 'all') {
+            filtered = filtered.filter(ev => ev.city === cityVal);
+        }
+
+        // Выводим отфильтрованный список
+        eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
+    }
+
+    // Обработчики кнопок быстрых фильтров
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+
+            // Показываем/скрываем блок выбора месяца
+            if (currentFilter === 'specific') {
+                monthPickerContainer.classList.add('visible');
+            } else {
+                monthPickerContainer.classList.remove('visible');
+            }
+
+            // Немедленно применяем фильтр (для 'specific' используются текущие значения селектов)
+            applyAllFilters();
+        });
+    });
+
+    // При изменении селектов месяца или года, если активен фильтр "specific",
+    // автоматически пересчитываем результаты (без нажатия "Применить")
+    pickerMonthSelect.addEventListener('change', () => {
+        if (currentFilter === 'specific') {
+            applyAllFilters();
+        }
+    });
+
+    pickerYearSelect.addEventListener('change', () => {
+        if (currentFilter === 'specific') {
+            applyAllFilters();
+        }
+    });
+
+    // Кнопка "Применить" (оставлена для совместимости, но теперь не обязательна)
+    applyMonthFilterBtn.addEventListener('click', () => {
+        // Просто вызываем фильтрацию, если активен specific (значения уже прочитаны)
+        if (currentFilter === 'specific') {
+            applyAllFilters();
+        }
+    });
+
+    // Обработчики для фильтра статуса и города (действуют всегда)
+    statusFilter.addEventListener('change', applyAllFilters);
+    cityFilter.addEventListener('change', applyAllFilters);
+
+    // Делегирование кликов по кнопкам "Подробнее"
+    eventsListContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.open-event-btn');
+        if (btn) {
+            openEventFromList(btn.dataset.title);
+        }
+    });
+
+    // Открываем модальное окно и применяем начальный фильтр (по умолчанию "За месяц")
+    listModalOverlay.classList.add('active');
+    tg.BackButton.show();
+    applyAllFilters();
+}
         function closeListModal() {
             listModalOverlay.classList.remove('active');
             tg.BackButton.hide();
