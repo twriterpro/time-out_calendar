@@ -76,10 +76,20 @@
             --flag-pole-height: 24px;
             --flag-width: 20px;
             --flag-height: 14px;
+            --flag-primary-color: #e74c3c;
+            --flag-secondary-color: #c0392b;
             --flag-shadow: 0 3px 6px rgba(0,0,0,0.3);
 
             /* Анимация мигания */
             --blink-duration: 1s;
+
+            /* Стили для чекбокса "мои игры" */
+            --my-games-checkbox-color: #2481cc;      /* приятный синий */
+            --my-games-checkbox-border-width: 1px;
+            --my-games-checkbox-size: 16px;
+            --my-games-checkbox-radius: 4px;
+            --my-games-checkbox-check-size: 4px 8px; /* размер галочки (ширина, высота) */
+            --my-games-checkbox-margin-top: 10px;    /* отступ сверху от предыдущих строк */
         }
 
         @media (prefers-color-scheme: dark) {
@@ -120,6 +130,7 @@
                 --btn-bg: #1E2A1E;
                 --btn-text: #64b5f6;
                 --flag-shadow: 0 3px 6px rgba(0,0,0,0.6);
+                --my-games-checkbox-color: #64b5f6;  /* для тёмной темы можно другой */
             }
         }
 
@@ -480,6 +491,50 @@
         }
         .legend-flag.plan { background: #bdc3c7; border: 1px dashed #7f8c8d; clip-path: none; border-radius: 2px; }
 
+        /* ============================================================
+               СТИЛИ ДЛЯ ЧЕКБОКСА "МОИ ИГРЫ" В ЛЕГЕНДЕ
+               ============================================================ */
+        .map-legend-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: var(--my-games-checkbox-margin-top);
+            padding-top: 8px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: inherit;
+            user-select: none;
+            transition: opacity 0.2s ease;
+        }
+        .map-legend-checkbox input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: var(--my-games-checkbox-size);
+            height: var(--my-games-checkbox-size);
+            border: var(--my-games-checkbox-border-width) solid var(--my-games-checkbox-color);
+            border-radius: var(--my-games-checkbox-radius);
+            background: transparent;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        .map-legend-checkbox input[type="checkbox"]:checked {
+            background-color: var(--my-games-checkbox-color);
+            border-color: var(--my-games-checkbox-color);
+        }
+        .map-legend-checkbox input[type="checkbox"]:checked::after {
+            content: '';
+            display: block;
+            width: var(--my-games-checkbox-check-size);
+            height: calc(var(--my-games-checkbox-check-size) * 2);
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin: 1px 0 0 5px;
+        }
+
         .ol-popup {
             position: absolute;
             background: white;
@@ -582,7 +637,6 @@
         <div class="modal-content list-modal-content" id="listModalContent">
             <div class="modal-header">
                 <h3 id="listModalTitle">События</h3>
-                <!-- Добавлен onclick для гарантированного закрытия -->
                 <button class="modal-close" id="listModalCloseBtn" onclick="closeListModal()">×</button>
             </div>
             <div id="listModalBody"></div>
@@ -778,7 +832,6 @@
                 });
             }
 
-            // Обратная совместимость
             if (event.users && Array.isArray(event.users)) {
                 event.users.forEach(u => {
                     if (!users.includes(u)) users.push(u);
@@ -895,6 +948,7 @@
         let mapInstance = null;
         let markerEntries = [];
         let selectedStatuses = new Set();
+        let showOnlyMyEvents = false; // чекбокс "мои игры"
 
         const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
         const START_YEAR = 2025;
@@ -1337,18 +1391,14 @@
         }
 
         // ============================================================
-        // ЗАКРЫТИЕ СПИСКОВОГО ОКНА (гарантированное)
+        // ЗАКРЫТИЕ СПИСКОВОГО ОКНА
         // ============================================================
         function closeListModal() {
             listModalOverlay.classList.remove('active');
             tg.BackButton.hide();
         }
-
-        // Дополнительные обработчики (на случай, если onclick не сработает)
         listModalCloseBtn.addEventListener('click', closeListModal);
-        listModalOverlay.addEventListener('click', (e) => {
-            if (e.target === listModalOverlay) closeListModal();
-        });
+        listModalOverlay.addEventListener('click', (e) => { if (e.target === listModalOverlay) closeListModal(); });
 
         // ============================================================
         // СЕКЦИЯ: "МОИ СОБЫТИЯ" (гибридная фильтрация)
@@ -1481,8 +1531,22 @@
         });
 
         // ============================================================
-        // СЕКЦИЯ: КАРТА (OpenLayers) с легендой и фильтрацией
+        // СЕКЦИЯ: КАРТА (OpenLayers) с легендой, фильтрацией и чекбоксом "мои игры"
         // ============================================================
+        // Функция проверки участия текущего пользователя в событии
+        function isUserParticipant(ev) {
+            const user = tg.initDataUnsafe?.user;
+            if (!user) return false;
+            const username = user.username ? user.username.toLowerCase() : null;
+            const userId = user.id ? Number(user.id) : null;
+
+            if (username) {
+                if (ev.users.some(u => u.toLowerCase() === '@' + username)) return true;
+            }
+            if (userId && ev.userIds.includes(userId)) return true;
+            return false;
+        }
+
         window.openMapModal = function() {
             mapModalOverlay.classList.add('active');
             if (!mapInstance) {
@@ -1521,6 +1585,7 @@
 
                 markerEntries = [];
                 selectedStatuses = new Set();
+                showOnlyMyEvents = false;
 
                 Object.values(locationEventsMap).forEach(loc => {
                     const statuses = new Set();
@@ -1528,6 +1593,9 @@
                         const eff = getEffectiveStatus(ev, ev.title);
                         statuses.add(eff);
                     });
+                    // Определяем есть ли события пользователя в этой локации
+                    const hasMyEvents = loc.events.some(ev => isUserParticipant(ev));
+
                     let color = '#e74c3c';
                     if (statuses.has('play')) color = '#2ecc71';
                     else if (statuses.has('current')) color = '#f1c40f';
@@ -1595,10 +1663,12 @@
                     markerEntries.push({
                         overlay: marker,
                         element: flagEl,
-                        statuses: statuses
+                        statuses: statuses,
+                        hasMyEvents: hasMyEvents
                     });
                 });
 
+                // Создаём легенду
                 const legend = document.createElement('div');
                 legend.className = 'map-legend';
                 legend.innerHTML = `
@@ -1607,10 +1677,18 @@
                     <div class="map-legend-item" data-status="play"><span class="legend-flag" style="background:linear-gradient(135deg, #2ecc71, #27ae60);"></span> играем сейчас</div>
                     <div class="map-legend-item" data-status="closest"><span class="legend-flag" style="background:linear-gradient(135deg, #9b59b6, #7d3c98);"></span> ближайшие</div>
                     <div class="map-legend-item" data-status="plan"><span class="legend-flag plan"></span> планируется</div>
+                    <!-- Чекбокс "мои игры" внизу легенды -->
+                    <label class="map-legend-checkbox">
+                        <input type="checkbox" id="myGamesCheckbox">
+                        <span>мои игры</span>
+                    </label>
                 `;
                 mapContainer.appendChild(legend);
 
                 const legendItems = legend.querySelectorAll('.map-legend-item');
+                const myGamesCheckbox = legend.querySelector('#myGamesCheckbox');
+
+                // Обработчики кликов по легенде
                 legendItems.forEach(item => {
                     item.addEventListener('click', () => {
                         const status = item.dataset.status;
@@ -1622,6 +1700,12 @@
                         updateLegendUI();
                         applyLegendFilter();
                     });
+                });
+
+                // Обработчик чекбокса
+                myGamesCheckbox.addEventListener('change', () => {
+                    showOnlyMyEvents = myGamesCheckbox.checked;
+                    applyLegendFilter();
                 });
 
                 function updateLegendUI() {
@@ -1641,19 +1725,30 @@
 
                 function applyLegendFilter() {
                     markerEntries.forEach(entry => {
-                        if (selectedStatuses.size === 0) {
+                        let shouldShow = true;
+
+                        // Проверка по статусам
+                        if (selectedStatuses.size > 0) {
+                            shouldShow = [...entry.statuses].some(s => selectedStatuses.has(s));
+                        }
+
+                        // Проверка по "мои игры"
+                        if (showOnlyMyEvents) {
+                            shouldShow = shouldShow && entry.hasMyEvents;
+                        }
+
+                        if (shouldShow) {
                             entry.overlay.setElement(entry.element);
                         } else {
-                            const shouldShow = [...entry.statuses].some(s => selectedStatuses.has(s));
-                            if (shouldShow) {
-                                entry.overlay.setElement(entry.element);
-                            } else {
-                                entry.overlay.setElement(null);
-                            }
+                            entry.overlay.setElement(null);
                         }
                     });
                 }
 
+                // Инициализация фильтра (все видимы)
+                applyLegendFilter();
+
+                // Анимация приближения
                 setTimeout(() => {
                     mapInstance.getView().animate({
                         center: ol.proj.fromLonLat([37.6173, 55.7558]),
