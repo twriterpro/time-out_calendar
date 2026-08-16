@@ -164,7 +164,8 @@
         .month-select,
         .year-select {
             background: var(--tg-secondary-bg-color);
-            color: var(--btn-text); /* акцентный цвет для выбранного значения */
+            color: #1E9F57 !important; /* Яркий зелёный цвет текста выбранного значения */
+            -webkit-text-fill-color: #1E9F57;
             border: 1px solid var(--calendar-muted);
             border-radius: 8px;
             padding: 6px 8px;
@@ -225,14 +226,17 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        /* Обновлённые кнопки */
+        /* Обновлённые кнопки с фоном #E9FDF0 */
         .action-btn,
         .nearest-select,
         .my-events-btn {
-            flex:1; padding:12px 16px; border:none; border-radius:12px; background: var(--btn-bg);
-            color: var(--btn-text); font-size:0.95rem; font-weight:600; cursor:pointer;
+            flex:1; padding:12px 16px; border:none; border-radius:12px;
+            background: #E9FDF0 !important; /* Фон кнопок в светлой теме */
+            color: #1E9F57; /* Цвет текста */
+            font-size:0.95rem; font-weight:600; cursor:pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-            -webkit-tap-highlight-color: transparent; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.05);
+            -webkit-tap-highlight-color: transparent; text-align:center;
+            box-shadow:0 2px 8px rgba(0,0,0,0.05);
             appearance: none;
             min-width: 0;
         }
@@ -245,7 +249,6 @@
             background-position: right 10px center;
             padding-right: 30px;
             border: none; /* убираем рамку */
-            color: var(--btn-text);
         }
 
         .modal-overlay {
@@ -474,7 +477,7 @@
             transition: opacity 0.2s ease;
         }
         .map-legend-item.disabled {
-            opacity: 0.4;
+            opacity: 0.4; /* Приглушаем невыбранные */
         }
         .legend-flag {
             width: 16px;
@@ -767,6 +770,7 @@
                 }
             ]
         };
+
         // ============================================================
         // СЕКЦИЯ: ОБЪЕДИНЕНИЕ СОБЫТИЙ ПО TITLE
         // ============================================================
@@ -810,9 +814,8 @@
             today.setHours(0,0,0,0);
             const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
             const merged = getMergedEvents().find(m => m.title === title);
-            if (!merged) return event.status; // fallback
-            const dates = merged.dates.map(d => d); // строка YYYY-MM-DD
-            dates.sort();
+            if (!merged) return event.status;
+            const dates = merged.dates.slice().sort();
             const minDate = dates[0];
             const maxDate = dates[dates.length - 1];
             if (todayKey >= minDate && todayKey <= maxDate) {
@@ -820,7 +823,7 @@
             } else if (todayKey > maxDate) {
                 return 'finish';
             } else {
-                return event.status; // будущее событие, сохраняем исходный статус
+                return event.status;
             }
         }
 
@@ -854,8 +857,8 @@
         let selectedDate = null;
         let selectedDayElement = null;
         let mapInstance = null;
-        let markerEntries = []; // для фильтрации легенды
-        let activeStatuses = new Set(); // активные статусы в легенде
+        let markerEntries = [];
+        let selectedStatuses = new Set(); // выбранные статусы (для легенды)
 
         const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
         const START_YEAR = 2025;
@@ -922,7 +925,6 @@
 
                 const events = eventsData[cellKey];
                 if (events && events.length > 0) {
-                    // Для каждого события вычисляем эффективный статус
                     const effectiveStatuses = events.map(ev => getEffectiveStatus(ev, ev.title));
                     const firstStatus = getStatusConfig(effectiveStatuses[0]);
                     dayCell.style.backgroundColor = hexToRgba(firstStatus.color, 0.15);
@@ -1300,9 +1302,6 @@
             applyAllFilters();
         }
 
-        // ============================================================
-        // СЕКЦИЯ: ЗАКРЫТИЕ СПИСКОВОГО ОКНА
-        // ============================================================
         function closeListModal() {
             listModalOverlay.classList.remove('active');
             tg.BackButton.hide();
@@ -1463,18 +1462,17 @@
                     locationEventsMap[locationKey].events.push(merged);
                 });
 
-                markerEntries = []; // сброс
+                markerEntries = [];
+                selectedStatuses = new Set(); // сброс при открытии
 
                 // Добавляем маркеры
                 Object.values(locationEventsMap).forEach(loc => {
-                    // Вычисляем набор статусов в этой локации
                     const statuses = new Set();
                     loc.events.forEach(ev => {
                         const eff = getEffectiveStatus(ev, ev.title);
                         statuses.add(eff);
                     });
-                    // Определяем цвет флажка по приоритету
-                    let color = '#e74c3c'; // finish по умолчанию
+                    let color = '#e74c3c';
                     if (statuses.has('play')) color = '#2ecc71';
                     else if (statuses.has('current')) color = '#f1c40f';
                     else if (statuses.has('closest')) color = '#9b59b6';
@@ -1504,7 +1502,6 @@
                     });
                     mapInstance.addOverlay(marker);
 
-                    // Попап
                     const popupElement = document.createElement('div');
                     popupElement.className = 'ol-popup';
                     popupElement.innerHTML = `<strong>${loc.name}</strong><br>Мероприятий: ${loc.events.length}`;
@@ -1539,7 +1536,6 @@
                         popup.setPosition(undefined);
                     });
 
-                    // Сохраняем для фильтрации
                     markerEntries.push({
                         overlay: marker,
                         element: flagEl,
@@ -1559,32 +1555,45 @@
                 `;
                 mapContainer.appendChild(legend);
 
-                // Обработчики кликов по легенде
                 const legendItems = legend.querySelectorAll('.map-legend-item');
                 legendItems.forEach(item => {
                     item.addEventListener('click', () => {
                         const status = item.dataset.status;
-                        if (activeStatuses.has(status)) {
-                            activeStatuses.delete(status);
-                            item.classList.remove('disabled');
+                        if (selectedStatuses.has(status)) {
+                            selectedStatuses.delete(status);
                         } else {
-                            activeStatuses.add(status);
-                            item.classList.add('disabled');
+                            selectedStatuses.add(status);
                         }
+                        updateLegendUI();
                         applyLegendFilter();
                     });
                 });
 
+                function updateLegendUI() {
+                    legendItems.forEach(item => {
+                        const status = item.dataset.status;
+                        if (selectedStatuses.size === 0) {
+                            item.classList.remove('disabled');
+                        } else {
+                            if (selectedStatuses.has(status)) {
+                                item.classList.remove('disabled');
+                            } else {
+                                item.classList.add('disabled');
+                            }
+                        }
+                    });
+                }
+
                 function applyLegendFilter() {
                     markerEntries.forEach(entry => {
-                        if (activeStatuses.size === 0) {
+                        if (selectedStatuses.size === 0) {
                             entry.overlay.setElement(entry.element);
                         } else {
-                            const intersection = [...entry.statuses].some(s => activeStatuses.has(s));
-                            if (intersection) {
+                            const shouldShow = [...entry.statuses].some(s => selectedStatuses.has(s));
+                            if (shouldShow) {
                                 entry.overlay.setElement(entry.element);
                             } else {
-                                entry.overlay.setElement(null); // скрыть
+                                entry.overlay.setElement(null);
                             }
                         }
                     });
