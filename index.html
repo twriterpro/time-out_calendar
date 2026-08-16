@@ -88,7 +88,7 @@
             --my-games-checkbox-border-width: 1px;
             --my-games-checkbox-size: 16px;
             --my-games-checkbox-radius: 4px;
-            --my-games-checkbox-margin-top: 10px;    /* отступ сверху от предыдущих строк */
+            --my-games-checkbox-margin-top: 14px;    /* отступ сверху от предыдущих строк */
             --my-games-checkbox-gap: 2px;            /* величина внутреннего отступа (зазор между рамкой и заливкой) */
         }
 
@@ -331,26 +331,41 @@
             color: var(--filter-btn-text);
             user-select: none;
             white-space: nowrap;
+            margin-left: auto;                /* прижимаем к правому краю */
         }
+
         .filter-my-events input[type="checkbox"] {
             appearance: none;
             -webkit-appearance: none;
             width: 16px;
             height: 16px;
-            border: 1px solid #fff;          /* белая тонкая рамка */
-            border-radius: 4px;              /* скругление */
+            border: 1px solid #fff;          /* тонкая белая рамка */
+            border-radius: 4px;
             background: transparent;
             cursor: pointer;
             transition: background-color 0.2s ease, border-color 0.2s ease;
             margin: 0;
             flex-shrink: 0;
-            box-sizing: border-box;
-            padding: 2px;                    /* зазор */
-            background-clip: content-box;
+            position: relative;
         }
+
         .filter-my-events input[type="checkbox"]:checked {
-            background-color: #fff;          /* белая заливка */
+            background-color: rgba(255,255,255,0.15); /* лёгкая подсветка */
             border-color: #fff;
+        }
+
+        /* Галочка */
+        .filter-my-events input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 1px;
+            width: 5px;
+            height: 9px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(42deg);        /* лёгкий наклон, несимметричная форма */
+            box-shadow: 1px 1px 0 rgba(0,0,0,0.1);
         }
 
         .month-picker-container,
@@ -528,7 +543,24 @@
         /* ============================================================
                СТИЛИ ДЛЯ ЧЕКБОКСА "МОИ ИГРЫ" В ЛЕГЕНДЕ
                ============================================================ */
+        
+        .map-legend-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 14px;                /* увеличенный отступ сверху */
+            padding-top: 8px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: inherit;
+            user-select: none;
+            transition: opacity 0.2s ease;
+            margin-left: 0;                  /* явно прижимаем к левому краю */
+        }
+        
         .map-legend-checkbox input[type="checkbox"] {
+            /* остальные стили остаются прежними */
             appearance: none;
             -webkit-appearance: none;
             width: var(--my-games-checkbox-size);
@@ -540,11 +572,11 @@
             transition: background-color 0.2s ease, border-color 0.2s ease;
             margin: 0;
             flex-shrink: 0;
-            box-sizing: border-box;          /* фон + рамка включены в размер */
-            padding: var(--my-games-checkbox-gap);   /* внутренний отступ для зазора */
-            background-clip: content-box;    /* фон отрисовывается только внутри padding */
+            box-sizing: border-box;
+            padding: var(--my-games-checkbox-gap);
+            background-clip: content-box;
         }
-
+        
         .map-legend-checkbox input[type="checkbox"]:checked {
             background-color: var(--my-games-checkbox-color);
             border-color: var(--my-games-checkbox-color);
@@ -1251,6 +1283,11 @@
                     <button class="filter-btn" data-filter="year">За год</button>
                     <button class="filter-btn" data-filter="specific">Выбор месяца</button>
                     <button class="filter-btn" data-filter="all">За все время</button>
+                    <button class="filter-btn" data-filter="all">За все время</button>
+                    <label class="filter-my-events" title="Показать только мои события">
+                        <input type="checkbox" id="myEventsFilterCheckbox">
+                        <span>Мои игры</span>
+                    </label>
                     <label class="filter-my-events" title="Показать только мои события">
                         <input type="checkbox" id="myEventsFilterCheckbox">
                         <span>мои игры</span>
@@ -1381,6 +1418,10 @@
                     filtered = filtered.filter(ev => isUserParticipant(ev));
                 }
 
+                if (myEventsFilterCheckbox.checked) {
+                    filtered = filtered.filter(ev => isUserParticipant(ev));
+                }
+                
                 eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
                 myEventsFilterCheckbox.addEventListener('change', applyAllFilters);
             }
