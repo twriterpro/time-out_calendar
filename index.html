@@ -660,7 +660,7 @@
         const statusConfig = {
             'finish':   { name: 'Завершено',  color: '#e74c3c', svg: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` },
             'current':  { name: 'В процессе подготовки', color: '#f1c40f', svg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>` },
-            'play':     { name: 'Сейчас идет', color: '#2ecc71', svg: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>` },
+            'play':     { name: 'Играем сейчас', color: '#2ecc71', svg: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>` },
             'closest':  { name: 'Ближайшие', color: '#9b59b6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.8 2.3 7.2-6.3-4.6L5.7 21.2 8 14 2 9.2h7.6z"/></svg>` },
             'plan':     { name: 'Планируемые', color: '#95a5a6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>` }
         };
@@ -683,103 +683,34 @@
                 {
                     title: 'Тверь 22-23 ноября 🏁',
                     subtitle: 'Личный турнир',
-                    city: 'tver',
-                    club: 'tver_club_1',
-                    type: 'out',
-                    guest: 'no',
-                    status: 'finish',
                     description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
                     links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }],
-                    users: ['@dmitriiananev', '@mariav2020'],
-                    userIds: ['1340734814', '1383822955'],
+                    type: 'out',
+                    guest: 'no',
+                    city: 'tver',
+                    club: 'tver_club_1',
+                    location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
+                    users: [],
+                    userIds: ['1340734814'],
+                    status: 'finish',
                 }
             ],
             '2025-11-23': [
                 {
                     title: 'Тверь 22-23 ноября 🏁',
                     subtitle: 'Парный турнир',
+                    description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
+                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }],
+                    type: 'out',
+                    guest: 'no',
                     city: 'tver',
                     club: 'tver_club_1',
-                    type: 'out',
-                    guest: 'no',
-                    status: 'finish',
-                    description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
                     location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }],
-                    users: ['@dmitriiananev', '@mariav2020'],
-                    userIds: ['1340734814', '1383822955'],
+                    users: [],
+                    userIds: ['1340734814'],
+                    status: 'finish',
                 }
             ],
-            '2026-08-26': [
-                {
-                    title: 'Тренировка',
-                    subtitle: 'Подготовка к турниру',
-                    city: 'moscow',
-                    type: 'in',
-                    guest: 'no',
-                    status: 'current',
-                    description: 'Внутренняя тренировка команды',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }],
-                    users: ['@dmitriiananev', '@mariav2020'],
-                    userIds: ['1340734814', '1383822955'],
-                }
-            ],
-            '2026-08-16': [
-                {
-                    title: 'Тренировка 2',
-                    subtitle: 'Подготовка к турниру',
-                    city: 'moscow',
-                    type: 'in',
-                    guest: 'no',
-                    status: 'play',
-                    description: 'Внутренняя тренировка команды',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }],
-                    users: ['@dmitriiananev', '@mariav2020'],
-                    userIds: ['1340734814', '1383822955'],
-                }
-            ],
-            '2026-11-10': [
-                {
-                    title: 'Встречаем гостей из Минска',
-                    subtitle: 'Товарищеский матч',
-                    city: 'moscow',
-                    type: 'in',
-                    guest: 'yes',
-                    status: 'closest',
-                    description: 'Игра с командой из Минска',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }],
-                    users: ['@dmitriiananev', '@mariav2020'],
-                    userIds: ['1340734814', '1383822955'],
-                }
-            ],
-            '2027-01-20': [
-                {
-                    title: 'Турнир сообщества',
-                    subtitle: 'Открытый чемпионат',
-                    city: 'spb',
-                    type: 'in',
-                    guest: 'no',
-                    status: 'plan',
-                    description: 'Ежегодный турнир среди команд',
-                    links: [],
-                    users: ['@dmitriiananev', '@mariav2020'],
-                    userIds: ['1340734814', '1383822955'],
-                }
-            ],
-            '2027-05-09': [
-                {
-                    title: 'Выезд в Казань',
-                    subtitle: 'Матч',
-                    city: 'kazan',
-                    type: 'out',
-                    guest: 'no',
-                    status: 'plan',
-                    description: 'Игра на выезде',
-                    links: [],
-                    users: ['@dmitriiananev', '@mariav2020'],
-                    userIds: ['1340734814', '1383822955'],
-                }
-            ]
         };
 
         // ============================================================
@@ -1183,7 +1114,7 @@ function getMergedEvents() {
                         <option value="all">Все статусы</option>
                         <option value="finish">Завершено</option>
                         <option value="current">В процессе подготовки</option>
-                        <option value="play">Сейчас идет</option>
+                        <option value="play">Играем сейчас</option>
                         <option value="closest">Ближайшие</option>
                         <option value="plan">Планируемые</option>
                     </select>
