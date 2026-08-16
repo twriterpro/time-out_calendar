@@ -329,7 +329,7 @@
         }
         .list-modal-overlay.active .modal-content { transform: translateY(0); opacity:1; }
 
-        /* Иконка глобуса: просто эмодзи, без анимации (при желании можно добавить лёгкое покачивание) */
+        /* Иконка глобуса: просто эмодзи, без анимации */
         .globe-btn {
             background: none;
             border: none;
@@ -357,6 +357,7 @@
             width: 100%;
             height: 100%;
             border-radius: 0 0 var(--calendar-radius) var(--calendar-radius);
+            position: relative;
         }
         .map-header {
             padding: 15px;
@@ -404,6 +405,49 @@
             margin-top: 2px;
             white-space: nowrap;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        /* Стили для планируемых флажков (plan) */
+        .custom-flag-marker.plan-flag .flag-canvas {
+            background: #bdc3c7;
+            border: 1px dashed #7f8c8d;
+            clip-path: none;
+            border-radius: 2px;
+        }
+        .custom-flag-marker.plan-flag .flag-pole {
+            background: #7f8c8d;
+        }
+        .custom-flag-marker.plan-flag .flag-count {
+            background: #7f8c8d;
+            color: #fff;
+        }
+
+        /* Легенда карты */
+        .map-legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-family: var(--font-family);
+            font-size: 0.8rem;
+            color: #333;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 1000;
+            pointer-events: none;
+        }
+        .map-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 3px 0;
+        }
+        .map-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
         }
 
         .ol-popup {
@@ -473,7 +517,6 @@
             <select class="month-select" id="monthSelect"></select>
             <select class="year-select" id="yearSelect"></select>
             <button class="nav-btn" id="nextMonthBtn">›</button>
-            <!-- Кнопка глобуса с эмодзи Земли (без анимации) -->
             <button class="globe-btn" id="globeBtn" onclick="openMapModal()" title="Карта мира">🌍</button>
         </div>
         <div class="weekdays">
@@ -487,7 +530,6 @@
                 <option value="in_no">Ближайший турнир сообщества</option>
                 <option value="in_yes">Встречаем гостей</option>
             </select>
-            <!-- Кнопка "Все мероприятия" с прямым onclick для надёжности -->
             <button class="action-btn" id="allEventsBtn" onclick="openAllEvents()">Все мероприятия</button>
             <button class="my-events-btn" id="myEventsBtn" onclick="openMyEvents()">Мои события</button>
         </div>
@@ -582,14 +624,14 @@
         };
 
         // ============================================================
-        // СЕКЦИЯ: СТАТУСЫ МЕРОПРИЯТИЙ
+        // СЕКЦИЯ: СТАТУСЫ МЕРОПРИЯТИЙ (цвета для карты)
         // ============================================================
         const statusConfig = {
-            'finish': { name: 'Завершено', color: '#95a5a6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` },
-            'current': { name: 'В процессе подготовки', color: '#3498db', svg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>` },
-            'play': { name: 'Сейчас идет', color: '#2ecc71', svg: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>` },
-            'closest': { name: 'Ближайшие', color: '#e67e22', svg: `<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.8 2.3 7.2-6.3-4.6L5.7 21.2 8 14 2 9.2h7.6z"/></svg>` },
-            'plan': { name: 'Планируемые', color: '#9b59b6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>` }
+            'finish':   { name: 'Завершено',  color: '#e74c3c', svg: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` },
+            'current':  { name: 'В процессе подготовки', color: '#f1c40f', svg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>` },
+            'play':     { name: 'Сейчас идет', color: '#2ecc71', svg: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>` },
+            'closest':  { name: 'Ближайшие', color: '#9b59b6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.8 2.3 7.2-6.3-4.6L5.7 21.2 8 14 2 9.2h7.6z"/></svg>` },
+            'plan':     { name: 'Планируемые', color: '#95a5a6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>` }
         };
 
         function getStatusConfig(status) {
@@ -628,7 +670,7 @@
                     links: [{ url: 'https://t.me/c/123', text: 'Перейти к теме', emoji: '' }]
                 }
             ],
-            '2026-09-10': [
+            '2026-01-10': [
                 {
                     title: 'Встречаем гостей из Минска',
                     subtitle: 'Товарищеский матч',
@@ -846,7 +888,7 @@
             events.forEach(ev => {
                 const st = getStatusConfig(ev.status);
                 const statusBadge = `<span class="badge" style="background:${st.color}; display:inline-block; width:16px; height:16px; border-radius:50%; vertical-align:middle; margin-right:5px;">${st.svg}</span>`;
-                const planNote = ev.status === 'plan' ? '<div style="color:#9b59b6; font-weight:600; margin-bottom:5px;">📋 Планируется</div>' : '';
+                const planNote = ev.status === 'plan' ? '<div style="color:#95a5a6; font-weight:600; margin-bottom:5px;">📋 Планируется</div>' : '';
                 const cityName = cityData[ev.city]?.name || ev.city;
                 const clubName = ev.club ? clubData[ev.club]?.name || ev.club : '';
                 const locationInfo = `${cityName}${clubName ? ', ' + clubName : ''}`;
@@ -937,10 +979,6 @@
             return new Date(y, m-1, d);
         }
 
-        function getMergedEventsList() {
-            return getMergedEvents();
-        }
-
         function createMergedEventsListHTML(mergedEvents) {
             if (mergedEvents.length === 0) {
                 return '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
@@ -997,7 +1035,7 @@
         }
 
         // ============================================================
-        // ОКНО "ВСЕ МЕРОПРИЯТИЯ" С ФИЛЬТРАМИ (исправлено)
+        // ОКНО "ВСЕ МЕРОПРИЯТИЯ" (исправлено закрытие)
         // ============================================================
         function openAllEvents() {
             listModalTitle.textContent = 'Все мероприятия';
@@ -1167,7 +1205,17 @@
         }
 
         // ============================================================
-        // СЕКЦИЯ: "МОИ СОБЫТИЯ" (с группировкой по статусам)
+        // СЕКЦИЯ: ЗАКРЫТИЕ СПИСКОВОГО ОКНА (ИСПРАВЛЕНО)
+        // ============================================================
+        function closeListModal() {
+            listModalOverlay.classList.remove('active');
+            tg.BackButton.hide();
+        }
+        listModalCloseBtn.addEventListener('click', closeListModal);
+        listModalOverlay.addEventListener('click', (e) => { if (e.target === listModalOverlay) closeListModal(); });
+
+        // ============================================================
+        // СЕКЦИЯ: "МОИ СОБЫТИЯ"
         // ============================================================
         function openMyEvents() {
             const username = tg.initDataUnsafe?.user?.username;
@@ -1279,9 +1327,8 @@
         });
 
         // ============================================================
-        // СЕКЦИЯ: КАРТА МИРА (OpenLayers) с учётом клубов
+        // СЕКЦИЯ: КАРТА (OpenLayers) с легендой и цветами
         // ============================================================
-        // Функция openMapModal теперь определена глобально, вызывается из HTML
         window.openMapModal = function() {
             mapModalOverlay.classList.add('active');
             if (!mapInstance) {
@@ -1319,9 +1366,12 @@
                     locationEventsMap[locationKey].events.push(merged);
                 });
 
+                // Добавляем маркеры
                 Object.values(locationEventsMap).forEach(loc => {
                     const flagEl = document.createElement('div');
-                    flagEl.className = 'custom-flag-marker';
+                    // Определяем класс для планируемых
+                    const isPlan = loc.events.some(ev => ev.status === 'plan');
+                    flagEl.className = 'custom-flag-marker' + (isPlan ? ' plan-flag' : '');
                     flagEl.innerHTML = `
                         <div class="flag-pole"></div>
                         <div class="flag-canvas"></div>
@@ -1336,6 +1386,7 @@
                     });
                     mapInstance.addOverlay(marker);
 
+                    // Попап с информацией
                     const popupElement = document.createElement('div');
                     popupElement.className = 'ol-popup';
                     popupElement.innerHTML = `<strong>${loc.name}</strong><br>Мероприятий: ${loc.events.length}`;
@@ -1369,6 +1420,18 @@
                     });
                 });
 
+                // Добавляем легенду
+                const legend = document.createElement('div');
+                legend.className = 'map-legend';
+                legend.innerHTML = `
+                    <div class="map-legend-item"><span class="map-legend-dot" style="background:#e74c3c;"></span> играли</div>
+                    <div class="map-legend-item"><span class="map-legend-dot" style="background:#f1c40f;"></span> готовимся играть</div>
+                    <div class="map-legend-item"><span class="map-legend-dot" style="background:#2ecc71;"></span> играем сейчас</div>
+                    <div class="map-legend-item"><span class="map-legend-dot" style="background:#95a5a6; border:1px dashed #7f8c8d;"></span> планируется</div>
+                `;
+                mapContainer.appendChild(legend);
+
+                // Анимация приближения
                 setTimeout(() => {
                     mapInstance.getView().animate({
                         center: ol.proj.fromLonLat([37.6173, 55.7558]),
