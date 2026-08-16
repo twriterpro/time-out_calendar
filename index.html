@@ -8,9 +8,8 @@
     <!-- Подключение Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- OpenLayers CSS и JS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.2.1/ol.css">
-    <script src="https://cdn.jsdelivr.net/npm/ol@v10.2.1/dist/ol.js"></script>
+    <!-- Шрифт для подписей на карте (по желанию) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
         /* ============================================================
@@ -69,13 +68,12 @@
             --globe-size: 36px;
             --globe-animation-duration: 12s;
 
-            /* Объемный флажок */
-            --flag-pole-height: 24px;
-            --flag-width: 20px;
-            --flag-height: 14px;
-            --flag-primary-color: #e74c3c;
-            --flag-secondary-color: #c0392b;
-            --flag-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            /* Параметры карты */
+            --map-bg: #aadaff;
+            --map-label-color: #333;
+            --map-label-shadow: 0 0 4px rgba(255,255,255,0.8);
+            --map-zoom-duration: 2.5s;
+            --map-zoom-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         @media (prefers-color-scheme: dark) {
@@ -113,8 +111,9 @@
                 --badge-border: 1px solid rgba(0,0,0,0.3);
                 --apply-btn-bg: var(--calendar-accent);
                 --apply-btn-text: #000000;
-                --flag-primary-color: #ff6b6b;
-                --flag-secondary-color: #d9534f;
+                --map-bg: #1a2a3a;
+                --map-label-color: #fff;
+                --map-label-shadow: 0 0 4px rgba(0,0,0,0.8);
             }
         }
 
@@ -255,10 +254,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .my-events-btn:active {
-            transform: scale(0.95);
-            opacity: 0.8;
-        }
+        .my-events-btn:active { transform: scale(0.95); opacity: 0.8; }
 
         .modal-overlay {
             position:fixed; top:0; left:0; width:100%; height:100%; background:var(--calendar-modal-overlay);
@@ -333,7 +329,9 @@
         }
         .list-modal-overlay.active .modal-content { transform: translateY(0); opacity:1; }
 
-        /* Иконка глобуса */
+        /* ============================================================
+               ИКОНКА ГЛОБУСА (в стиле эмодзи 🌍)
+               ============================================================ */
         .globe-btn {
             background: none;
             border: none;
@@ -356,25 +354,23 @@
             width: 100%;
             height: 100%;
             display: block;
-            transform: rotateX(20deg);
+            transform: rotateX(15deg);
         }
         @keyframes spinGlobe {
-            from { transform: rotateY(0deg); }
-            to { transform: rotateY(360deg); }
+            from { transform: rotateY(0deg) rotateX(15deg); }
+            to { transform: rotateY(360deg) rotateX(15deg); }
         }
 
-        /* Модальное окно карты */
+        /* ============================================================
+               МОДАЛЬНОЕ ОКНО КАРТЫ (стилизованная SVG-карта)
+               ============================================================ */
         .map-modal .modal-content {
             width: 90%;
             max-width: 600px;
             height: 70vh;
             padding: 0;
             overflow: hidden;
-        }
-        .map-container {
-            width: 100%;
-            height: 100%;
-            border-radius: 0 0 var(--calendar-radius) var(--calendar-radius);
+            background: var(--calendar-modal-bg);
         }
         .map-header {
             padding: 15px;
@@ -383,79 +379,46 @@
             align-items: center;
             background: var(--tg-secondary-bg-color);
         }
-        .map-header h3 {
-            color: var(--calendar-text);
-            margin: 0;
-        }
+        .map-header h3 { color: var(--calendar-text); margin: 0; }
 
-        .custom-flag-marker {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            filter: drop-shadow(var(--flag-shadow));
-            transition: transform 0.2s ease;
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: calc(100% - 50px);
+            overflow: hidden;
+            background: var(--map-bg);
         }
-        .custom-flag-marker:hover { transform: scale(1.1); }
-        .flag-pole {
-            width: 2px;
-            height: var(--flag-pole-height);
-            background: #333;
-            border-radius: 1px;
+        .world-map-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            transition: transform var(--map-zoom-duration) var(--map-zoom-easing);
+            transform-origin: center center;
+            cursor: default;
         }
-        .flag-canvas {
-            width: var(--flag-width);
-            height: var(--flag-height);
-            background: linear-gradient(135deg, var(--flag-primary-color) 0%, var(--flag-secondary-color) 100%);
-            clip-path: polygon(0 0, 100% 50%, 0 100%);
-            margin-left: -2px;
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-        .flag-count {
-            font-size: 10px;
-            font-weight: bold;
-            color: #fff;
-            background: #e74c3c;
-            border-radius: 10px;
-            padding: 2px 5px;
-            margin-top: 2px;
-            white-space: nowrap;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        }
-
-        .ol-popup {
+        .map-label {
             position: absolute;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border-radius: 12px;
-            padding: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: var(--font-family);
-            color: #333;
-            min-width: 150px;
-            z-index: 999;
-        }
-        .ol-popup:after, .ol-popup:before {
-            top: 100%;
-            border: solid transparent;
-            content: " ";
-            height: 0;
-            width: 0;
-            position: absolute;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 700;
+            color: var(--map-label-color);
+            text-shadow: var(--map-label-shadow);
             pointer-events: none;
+            transition: opacity 0.5s ease;
+            opacity: 0;
         }
-        .ol-popup:after {
-            border-top-color: white;
-            border-width: 10px;
-            left: 48px;
-            margin-left: -10px;
+        .map-label.visible { opacity: 1; }
+        .map-label.oslo { left: 15%; top: 50%; font-size: 1.2rem; }
+        .map-label.south-island { left: 50%; top: 5%; font-size: 1.1rem; }
+        .map-label.moscow { left: 60%; top: 45%; font-size: 1.3rem; }
+
+        /* Начальное состояние карты (общий вид) */
+        .map-container.zoomed .world-map-svg {
+            transform: scale(4) translate(-20%, -10%);
         }
-        .ol-popup:before {
-            border-top-color: #cccccc;
-            border-width: 11px;
-            left: 48px;
-            margin-left: -11px;
+        .map-container.zoomed .map-label.oslo,
+        .map-container.zoomed .map-label.south-island,
+        .map-container.zoomed .map-label.moscow {
+            opacity: 1;
         }
 
         @media (max-width:480px) {
@@ -474,9 +437,9 @@
             .badges-container { bottom:2px; }
             .badge { width:12px; height:12px; }
             .map-modal .modal-content { height: 80vh; }
-            .flag-pole { height: 20px; }
-            .flag-width { width: 16px; }
-            .flag-height { height: 12px; }
+            .map-label.oslo { font-size: 1rem; }
+            .map-label.south-island { font-size: 0.9rem; }
+            .map-label.moscow { font-size: 1.1rem; }
         }
     </style>
 </head>
@@ -490,45 +453,27 @@
             <select class="month-select" id="monthSelect"></select>
             <select class="year-select" id="yearSelect"></select>
             <button class="nav-btn" id="nextMonthBtn">›</button>
-            <!-- Иконка глобуса -->
+            <!-- Глобус (🌍) с вращением -->
             <button class="globe-btn" id="globeBtn" title="Карта мира">
                 <div class="globe-icon-wrapper">
                     <svg class="globe-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <radialGradient id="ocean" cx="35%" cy="35%" r="65%">
-                                <stop offset="0%" stop-color="#1e90ff" />
-                                <stop offset="70%" stop-color="#0052cc" />
-                                <stop offset="100%" stop-color="#002b80" />
-                            </radialGradient>
-                            <linearGradient id="land" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#a3e635" />
-                                <stop offset="50%" stop-color="#22c55e" />
-                                <stop offset="100%" stop-color="#15803d" />
-                            </linearGradient>
-                            <radialGradient id="atmosphere" cx="50%" cy="50%" r="50%">
-                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0" />
-                                <stop offset="80%" stop-color="#000000" stop-opacity="0.1" />
-                                <stop offset="100%" stop-color="#000000" stop-opacity="0.6" />
-                            </radialGradient>
-                            <linearGradient id="gloss" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4" />
-                                <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
-                            </linearGradient>
-                            <mask id="globe-mask">
-                                <circle cx="50" cy="50" r="45" fill="#ffffff" />
-                            </mask>
-                        </defs>
-                        <circle cx="50" cy="50" r="45" fill="url(#ocean)" />
-                        <g mask="url(#globe-mask)">
-                            <path d="M 40 8 C 45 7, 53 10, 50 18 C 47 22, 42 16, 40 12 Z" fill="url(#land)" />
-                            <path d="M 12 25 C 15 22, 25 20, 32 25 C 35 22, 42 22, 45 28 C 48 32, 43 40, 38 42 C 35 40, 32 45, 36 50 C 38 52, 42 51, 40 56 C 39 58, 35 55, 34 50 C 32 48, 28 50, 26 46 C 22 46, 20 40, 16 38 C 12 36, 10 32, 12 25 Z" fill="url(#land)" />
-                            <path d="M 34 51 C 38 53, 44 54, 46 58 C 49 64, 46 72, 41 78 C 38 83, 35 88, 34 91 C 33 91, 32 85, 32 80 C 32 75, 28 68, 28 62 C 28 56, 31 52, 34 51 Z" fill="url(#land)" />
-                            <circle cx="39" cy="47" r="1.5" fill="url(#land)" />
-                            <circle cx="43" cy="49" r="1" fill="url(#land)" />
-                            <path d="M 82 25 C 85 30, 92 32, 95 28 C 93 40, 85 45, 80 48 C 76 50, 75 55, 78 60 C 82 65, 88 62, 92 65 C 90 75, 82 85, 80 88 C 78 85, 78 75, 75 72 Z" fill="url(#land)" />
+                        <!-- Океан -->
+                        <circle cx="50" cy="50" r="45" fill="#1E90FF" />
+                        <!-- Материки (упрощённо, похоже на эмодзи) -->
+                        <g fill="#4CAF50">
+                            <!-- Европа/Африка -->
+                            <path d="M 65 20 C 70 22, 78 25, 80 35 C 82 45, 75 55, 70 60 C 65 65, 60 62, 58 55 C 55 45, 58 35, 62 28 Z"/>
+                            <!-- Азия -->
+                            <path d="M 70 15 C 80 12, 90 20, 92 35 C 93 45, 85 55, 78 58 C 75 60, 72 50, 74 40 C 76 30, 72 20, 70 15 Z"/>
+                            <!-- Северная Америка -->
+                            <path d="M 5 15 C 10 10, 25 12, 30 20 C 35 28, 30 40, 22 45 C 15 42, 10 35, 8 25 Z"/>
+                            <!-- Южная Америка -->
+                            <path d="M 25 50 C 30 52, 35 55, 38 62 C 40 70, 35 80, 30 85 C 25 80, 28 70, 25 62 Z"/>
+                            <!-- Австралия -->
+                            <path d="M 85 75 C 90 75, 95 80, 92 85 C 88 88, 82 85, 83 80 Z"/>
                         </g>
-                        <circle cx="50" cy="50" r="45" fill="url(#atmosphere)" pointer-events="none" />
-                        <path d="M 10 35 A 45 45 0 0 1 80 15 A 43 43 0 0 0 15 42 Z" fill="url(#gloss)" pointer-events="none" />
+                        <!-- Блик -->
+                        <path d="M 15 30 A 40 40 0 0 1 75 12 A 45 45 0 0 0 20 38 Z" fill="rgba(255,255,255,0.3)" pointer-events="none"/>
                     </svg>
                 </div>
             </button>
@@ -578,7 +523,42 @@
                 <h3>Карта мероприятий</h3>
                 <button class="modal-close" id="mapModalCloseBtn">×</button>
             </div>
-            <div class="map-container" id="mapContainer"></div>
+            <div class="map-container" id="mapContainer">
+                <!-- Стилизованная SVG карта мира -->
+                <svg class="world-map-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                    <!-- Фон океана -->
+                    <rect width="100" height="100" fill="#aadaff" />
+                    <!-- Упрощённые континенты -->
+                    <g fill="#8BC34A" stroke="#558B2F" stroke-width="0.5">
+                        <!-- Северная Америка -->
+                        <path d="M 5 15 C 15 10, 30 12, 35 20 C 40 28, 32 40, 22 45 C 15 48, 8 40, 5 30 Z"/>
+                        <!-- Южная Америка -->
+                        <path d="M 25 50 C 32 52, 38 55, 40 62 C 42 70, 36 82, 30 88 C 25 82, 28 72, 25 62 Z"/>
+                        <!-- Европа -->
+                        <path d="M 60 15 C 65 12, 70 15, 72 22 C 74 30, 68 38, 60 40 C 55 38, 58 25, 60 15 Z"/>
+                        <!-- Африка -->
+                        <path d="M 62 38 C 70 40, 75 50, 73 62 C 70 75, 60 80, 55 75 C 50 70, 58 55, 62 38 Z"/>
+                        <!-- Азия -->
+                        <path d="M 70 10 C 80 8, 95 15, 97 30 C 98 45, 90 55, 80 55 C 75 50, 78 35, 72 25 Z"/>
+                        <!-- Австралия -->
+                        <path d="M 85 75 C 92 75, 98 80, 95 85 C 90 90, 82 88, 83 82 Z"/>
+                    </g>
+                    <!-- Города и метки (для зума) -->
+                    <!-- Москва -->
+                    <circle cx="68" cy="35" r="1.5" fill="#E53935" />
+                    <text x="69" y="34" font-size="3" fill="#333" font-weight="bold">Москва</text>
+                    <!-- Oslo -->
+                    <circle cx="58" cy="25" r="1.5" fill="#E53935" />
+                    <text x="56" y="24" font-size="3" fill="#333" font-weight="bold">Oslo</text>
+                    <!-- Южный остров (условно) -->
+                    <circle cx="68" cy="15" r="1.5" fill="#E53935" />
+                    <text x="69" y="14" font-size="3" fill="#333" font-weight="bold">Южный остров</text>
+                </svg>
+                <!-- HTML-метки для более чёткого отображения при зуме -->
+                <div class="map-label oslo">Oslo</div>
+                <div class="map-label south-island">Южный остров</div>
+                <div class="map-label moscow">Москва</div>
+            </div>
         </div>
     </div>
 
@@ -617,7 +597,7 @@
         tg.onEvent('themeChanged', applyTelegramTheme);
 
         // ============================================================
-        // СЕКЦИЯ: ГОРОДА (city) с GPS координатами для карты
+        // СЕКЦИЯ: ГОРОДА (city) с GPS координатами для карты (необязательно)
         // ============================================================
         const cityData = {
             'moscow':   { name: 'Москва',   lat: 55.7558, lon: 37.6173 },
@@ -635,7 +615,6 @@
             'moscow_club_b': { name: 'Клуб Б, Москва', lat: 55.7600, lon: 37.6200 },
             'tver_club_1':   { name: 'Сталекс, Тверь', lat: 56.8587, lon: 35.9176 },
             'spb_club_1':    { name: 'Клуб СПб', lat: 59.9343, lon: 30.3351 },
-            // Добавляйте новые клубы...
         };
 
         // ============================================================
@@ -662,7 +641,7 @@
                     title: 'Тверь 22-23 ноября 🏁',
                     subtitle: '',
                     city: 'tver',
-                    club: 'tver_club_1', // конкретный клуб
+                    club: 'tver_club_1',
                     type: 'out',
                     guest: 'no',
                     status: 'current',
@@ -718,7 +697,6 @@
                     title: 'Выезд в Казань',
                     subtitle: 'Матч',
                     city: 'kazan',
-                    // club не указан, будут использованы координаты города
                     type: 'out',
                     guest: 'no',
                     status: 'plan',
@@ -743,7 +721,7 @@
                             dates: [],
                             subtitles: [],
                             city: ev.city,
-                            club: ev.club || null, // сохраняем клуб
+                            club: ev.club || null,
                             type: ev.type,
                             guest: ev.guest,
                             status: ev.status,
@@ -790,7 +768,7 @@
         let currentDate = new Date(2025, 10, 1);
         let selectedDate = null;
         let selectedDayElement = null;
-        let mapInstance = null;
+        let mapZoomed = false;
 
         const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
         const START_YEAR = 2025;
@@ -906,7 +884,6 @@
                 const st = getStatusConfig(ev.status);
                 const statusBadge = `<span class="badge" style="background:${st.color}; display:inline-block; width:16px; height:16px; border-radius:50%; vertical-align:middle; margin-right:5px;">${st.svg}</span>`;
                 const planNote = ev.status === 'plan' ? '<div style="color:#9b59b6; font-weight:600; margin-bottom:5px;">📋 Планируется</div>' : '';
-                // Отображение города и клуба
                 const cityName = cityData[ev.city]?.name || ev.city;
                 const clubName = ev.club ? clubData[ev.club]?.name || ev.club : '';
                 const locationInfo = `${cityName}${clubName ? ', ' + clubName : ''}`;
@@ -1229,7 +1206,7 @@
         listModalOverlay.addEventListener('click', (e) => { if (e.target === listModalOverlay) closeListModal(); });
 
         // ============================================================
-        // СЕКЦИЯ: "МОИ СОБЫТИЯ"
+        // СЕКЦИЯ: "МОИ СОБЫТИЯ" (с группировкой по статусам)
         // ============================================================
         myEventsBtn.addEventListener('click', () => {
             const username = tg.initDataUnsafe?.user?.username;
@@ -1238,8 +1215,47 @@
                 return;
             }
             const myMerged = getMergedEvents().filter(ev => ev.users.includes('@' + username));
+
+            // Группируем по статусам
+            const groupedByStatus = {};
+            myMerged.forEach(ev => {
+                const status = ev.status;
+                if (!groupedByStatus[status]) groupedByStatus[status] = [];
+                groupedByStatus[status].push(ev);
+            });
+
+            // Формируем HTML с блоками статусов
+            let html = '';
+            for (const statusKey in groupedByStatus) {
+                const st = getStatusConfig(statusKey);
+                html += `<div style="margin-bottom:15px;">
+                    <div style="background:${st.color}; color:#fff; padding:6px 12px; border-radius:20px; display:inline-block; font-size:0.9rem; font-weight:600; margin-bottom:8px;">${st.name}</div>
+                    <div class="event-list">`;
+                groupedByStatus[statusKey].forEach(ev => {
+                    const sortedDates = [...ev.dates].sort((a,b) => parseDateKey(a) - parseDateKey(b));
+                    const firstDate = sortedDates[0];
+                    const lastDate = sortedDates[sortedDates.length-1];
+                    const dateStr = firstDate === lastDate
+                        ? formatDateForDisplay(firstDate)
+                        : `${formatDateForDisplay(firstDate)} - ${formatDateForDisplay(lastDate)}`;
+                    html += `
+                        <div class="event-date-group" data-title="${ev.title}">
+                            <div class="event-date-header">${dateStr}</div>
+                            <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
+                            ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
+                            <button class="action-btn" style="font-size:0.8rem; padding:5px 10px;" onclick="event.stopPropagation(); openEventFromList('${ev.title}')">Подробнее</button>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+            }
+
+            if (html === '') {
+                html = '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
+            }
+
             listModalTitle.textContent = 'Мои события';
-            listModalBody.innerHTML = createMergedEventsListHTML(myMerged);
+            listModalBody.innerHTML = html;
             listModalOverlay.classList.add('active');
             tg.BackButton.show();
         });
@@ -1300,7 +1316,7 @@
         });
 
         // ============================================================
-        // СЕКЦИЯ: КАРТА МИРА (OpenLayers) с учётом клубов
+        // СЕКЦИЯ: КАРТА (стилизованная SVG с зумом)
         // ============================================================
         globeBtn.addEventListener('click', openMapModal);
         mapModalCloseBtn.addEventListener('click', closeMapModal);
@@ -1308,107 +1324,17 @@
 
         function openMapModal() {
             mapModalOverlay.classList.add('active');
-            if (!mapInstance) {
-                mapInstance = new ol.Map({
-                    target: mapContainer,
-                    layers: [new ol.layer.Tile({ source: new ol.source.OSM() })],
-                    view: new ol.View({
-                        center: ol.proj.fromLonLat([37.6173, 55.7558]),
-                        zoom: 3
-                    }),
-                    controls: ol.control.defaults.defaults().extend([new ol.control.Zoom()])
-                });
-
-                // Группируем мероприятия по координатам (клуб или город)
-                const locationEventsMap = {}; // ключ: "club:clubKey" или "city:cityKey"
-                const mergedEvents = getMergedEvents();
-                mergedEvents.forEach(merged => {
-                    let locationKey, coords, locationName;
-                    if (merged.club && clubData[merged.club]) {
-                        locationKey = 'club:' + merged.club;
-                        coords = [clubData[merged.club].lon, clubData[merged.club].lat];
-                        locationName = clubData[merged.club].name;
-                    } else {
-                        locationKey = 'city:' + merged.city;
-                        coords = [cityData[merged.city].lon, cityData[merged.city].lat];
-                        locationName = cityData[merged.city].name;
-                    }
-                    if (!locationEventsMap[locationKey]) {
-                        locationEventsMap[locationKey] = {
-                            coords: coords,
-                            name: locationName,
-                            events: []
-                        };
-                    }
-                    locationEventsMap[locationKey].events.push(merged);
-                });
-
-                // Создаём маркеры для каждой локации
-                Object.values(locationEventsMap).forEach(loc => {
-                    const flagEl = document.createElement('div');
-                    flagEl.className = 'custom-flag-marker';
-                    flagEl.innerHTML = `
-                        <div class="flag-pole"></div>
-                        <div class="flag-canvas"></div>
-                        <div class="flag-count">${loc.events.length}</div>
-                    `;
-
-                    const marker = new ol.Overlay({
-                        position: ol.proj.fromLonLat(loc.coords),
-                        positioning: 'bottom-center',
-                        element: flagEl,
-                        stopEvent: false
-                    });
-                    mapInstance.addOverlay(marker);
-
-                    // Попап с информацией
-                    const popupElement = document.createElement('div');
-                    popupElement.className = 'ol-popup';
-                    popupElement.innerHTML = `<strong>${loc.name}</strong><br>Мероприятий: ${loc.events.length}`;
-                    loc.events.forEach(ev => {
-                        const datesStr = ev.dates.length > 1
-                            ? `${formatDateForDisplay(ev.dates[0])} - ${formatDateForDisplay(ev.dates[ev.dates.length-1])}`
-                            : formatDateForDisplay(ev.dates[0]);
-                        popupElement.innerHTML += `
-                            <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
-                                <span style="background:${getStatusConfig(ev.status).color}; display:inline-block; width:10px; height:10px; border-radius:50%;"></span>
-                                <strong>${ev.title}</strong><br>
-                                <small>${datesStr}</small><br>
-                                ${ev.description ? `<small>${ev.description}</small><br>` : ''}
-                                ${ev.links && ev.links.length ? ev.links.map(link => `<a href="${link.url}" target="_blank" rel="noopener noreferrer" style="color: #2481cc;">Перейти к теме</a>`).join('<br>') : ''}
-                            </div>
-                        `;
-                    });
-
-                    const popup = new ol.Overlay({
-                        element: popupElement,
-                        positioning: 'bottom-center',
-                        offset: [0, -20]
-                    });
-                    mapInstance.addOverlay(popup);
-
-                    flagEl.addEventListener('click', () => {
-                        popup.setPosition(marker.getPosition());
-                    });
-                    mapInstance.on('click', () => {
-                        popup.setPosition(undefined);
-                    });
-                });
-
-                // Анимация приближения
-                setTimeout(() => {
-                    mapInstance.getView().animate({
-                        center: ol.proj.fromLonLat([37.6173, 55.7558]),
-                        zoom: 5,
-                        duration: 2000
-                    });
-                }, 500);
-            }
-            setTimeout(() => mapInstance.updateSize(), 100);
+            // Сброс зума
+            mapContainer.classList.remove('zoomed');
+            // Запускаем анимацию зума после небольшой паузы
+            setTimeout(() => {
+                mapContainer.classList.add('zoomed');
+            }, 100);
         }
 
         function closeMapModal() {
             mapModalOverlay.classList.remove('active');
+            mapContainer.classList.remove('zoomed');
         }
 
         // ============================================================
