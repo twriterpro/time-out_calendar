@@ -785,38 +785,61 @@
         // ============================================================
         // СЕКЦИЯ: ОБЪЕДИНЕНИЕ СОБЫТИЙ ПО TITLE
         // ============================================================
-        let mergedEventsCache = null;
+           let mergedEventsCache = null;
 
-        function getMergedEvents() {
-            if (mergedEventsCache) return mergedEventsCache;
-            const mergedMap = new Map();
-            for (const [dateKey, events] of Object.entries(eventsData)) {
-                events.forEach(ev => {
-                    const key = ev.title;
-                    if (!mergedMap.has(key)) {
-                        mergedMap.set(key, {
-                            title: ev.title,
-                            dates: [],
-                            subtitles: [],
-                            city: ev.city,
-                            club: ev.club || null,
-                            type: ev.type,
-                            guest: ev.guest,
-                            status: ev.status,
-                            description: ev.description,
-                            users: ev.users || [],
-                            userIds: ev.userIds || [], // сохраняем userIds
-                            links: ev.links || []
-                        });
-                    }
-                    const merged = mergedMap.get(key);
-                    merged.dates.push(dateKey);
-                    merged.subtitles.push(ev.subtitle || '');
+function getMergedEvents() {
+    if (mergedEventsCache) return mergedEventsCache;
+    const mergedMap = new Map();
+    
+    for (const [dateKey, events] of Object.entries(eventsData)) {
+        events.forEach(ev => {
+            const key = ev.title;
+            
+            if (!mergedMap.has(key)) {
+                mergedMap.set(key, {
+                    title: ev.title,
+                    dates: [],
+                    subtitles: [],
+                    city: ev.city,
+                    club: ev.club || null,
+                    type: ev.type,
+                    guest: ev.guest,
+                    status: ev.status,
+                    description: ev.description,
+                    users: [],
+                    userIds: [],
+                    links: ev.links || []
                 });
             }
-            mergedEventsCache = Array.from(mergedMap.values());
-            return mergedEventsCache;
-        }
+            
+            const merged = mergedMap.get(key);
+            merged.dates.push(dateKey);
+            merged.subtitles.push(ev.subtitle || '');
+            
+            // Объединяем users
+            if (ev.users && Array.isArray(ev.users)) {
+                ev.users.forEach(u => {
+                    if (!merged.users.includes(u)) {
+                        merged.users.push(u);
+                    }
+                });
+            }
+            
+            // Объединяем userIds (с приведением к Number)
+            if (ev.userIds && Array.isArray(ev.userIds)) {
+                ev.userIds.forEach(id => {
+                    const numericId = Number(id);
+                    if (!merged.userIds.includes(numericId)) {
+                        merged.userIds.push(numericId);
+                    }
+                });
+            }
+        });
+    }
+    
+    mergedEventsCache = Array.from(mergedMap.values());
+    return mergedEventsCache;
+}
 
         // ============================================================
         // СЕКЦИЯ: АВТОМАТИЧЕСКОЕ ОПРЕДЕЛЕНИЕ СТАТУСА
@@ -1324,79 +1347,77 @@
         // СЕКЦИЯ: "МОИ СОБЫТИЯ" (гибридная фильтрация)
         // ============================================================
         function openMyEvents() {
-            // Получаем данные пользователя из Telegram WebApp
-            const user = tg.initDataUnsafe?.user;
-            if (!user) {
-                alert('Данные пользователя недоступны.');
-                return;
-            }
-            const username = user.username; // может быть undefined
-            const userId = user.id;         // числовой ID (всегда есть)
-            if (!userId && !username) {
-                alert('Не удалось идентифицировать пользователя.');
-                return;
-            }
-
-            // Фильтруем объединённые события, проверяя оба поля: users (@username) и userIds (числовые ID)
-            const myMerged = getMergedEvents().filter(ev => {
-                // Проверка по username
-                if (username && ev.users.includes('@' + username)) {
-                    return true;
-                }
-                // Проверка по числовому ID
-                if (userId && ev.userIds && ev.userIds.includes(userId)) {
-                    return true;
-                }
-                return false;
-            });
-
-            // Группируем по статусам (используя эффективный статус)
-            const groupedByStatus = {};
-            myMerged.forEach(ev => {
-                const eff = getEffectiveStatus(ev, ev.title);
-                if (!groupedByStatus[eff]) groupedByStatus[eff] = [];
-                groupedByStatus[eff].push(ev);
-            });
-
-            let html = '';
-            for (const statusKey in groupedByStatus) {
-                const st = getStatusConfig(statusKey);
-                html += `<div style="margin-bottom:15px;">
-                    <div style="background:${st.color}; color:#fff; padding:6px 12px; border-radius:20px; display:inline-block; font-size:0.9rem; font-weight:600; margin-bottom:8px;">${st.name}</div>
-                    <div class="event-list">`;
-                groupedByStatus[statusKey].forEach(ev => {
-                    const sortedDates = [...ev.dates].sort((a,b) => parseDateKey(a) - parseDateKey(b));
-                    const firstDate = sortedDates[0];
-                    const lastDate = sortedDates[sortedDates.length-1];
-                    const dateStr = firstDate === lastDate
-                        ? formatDateForDisplay(firstDate)
-                        : `${formatDateForDisplay(firstDate)} - ${formatDateForDisplay(lastDate)}`;
-                    const statusDot = `<span class="status-indicator" style="background:${st.color};"></span>`;
-                    html += `
-                        <div class="event-date-group" data-title="${ev.title}">
-                            <div class="event-date-header">${statusDot}${dateStr}</div>
-                            <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
-                            ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
-                            <button class="action-btn open-event-btn" style="font-size:0.8rem; padding:5px 10px;" data-title="${ev.title}">Подробнее</button>
-                        </div>
-                    `;
-                });
-                html += `</div></div>`;
-            }
-
-            if (html === '') {
-                html = '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
-            }
-
-            listModalTitle.textContent = 'Мои события';
-            listModalBody.innerHTML = html;
-            listModalBody.addEventListener('click', (e) => {
-                const btn = e.target.closest('.open-event-btn');
-                if (btn) openEventFromList(btn.dataset.title);
-            });
-            listModalOverlay.classList.add('active');
-            tg.BackButton.show();
+    const user = tg.initDataUnsafe?.user;
+    if (!user) {
+        alert('Данные пользователя недоступны.');
+        return;
+    }
+    const username = user.username ? user.username.toLowerCase() : null;
+    const userId = user.id ? Number(user.id) : null;
+    
+    if (!userId && !username) {
+        alert('Не удалось идентифицировать пользователя.');
+        return;
+    }
+    
+    const myMerged = getMergedEvents().filter(ev => {
+        if (username) {
+            const found = ev.users.some(u => u.toLowerCase() === '@' + username);
+            if (found) return true;
         }
+        if (userId && ev.userIds.includes(userId)) {
+            return true;
+        }
+        return false;
+    });
+    
+    // Группируем по статусам
+    const groupedByStatus = {};
+    myMerged.forEach(ev => {
+        const eff = getEffectiveStatus(ev, ev.title);
+        if (!groupedByStatus[eff]) groupedByStatus[eff] = [];
+        groupedByStatus[eff].push(ev);
+    });
+    
+    let html = '';
+    for (const statusKey in groupedByStatus) {
+        const st = getStatusConfig(statusKey);
+        html += `<div style="margin-bottom:15px;">
+            <div style="background:${st.color}; color:#fff; padding:6px 12px; border-radius:20px; display:inline-block; font-size:0.9rem; font-weight:600; margin-bottom:8px;">${st.name}</div>
+            <div class="event-list">`;
+        groupedByStatus[statusKey].forEach(ev => {
+            const sortedDates = [...ev.dates].sort((a,b) => parseDateKey(a) - parseDateKey(b));
+            const firstDate = sortedDates[0];
+            const lastDate = sortedDates[sortedDates.length-1];
+            const dateStr = firstDate === lastDate
+                ? formatDateForDisplay(firstDate)
+                : `${formatDateForDisplay(firstDate)} - ${formatDateForDisplay(lastDate)}`;
+            const statusDot = `<span class="status-indicator" style="background:${st.color};"></span>`;
+            html += `
+                <div class="event-date-group" data-title="${ev.title}">
+                    <div class="event-date-header">${statusDot}${dateStr}</div>
+                    <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
+                    ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
+                    <button class="action-btn open-event-btn" style="font-size:0.8rem; padding:5px 10px;" data-title="${ev.title}">Подробнее</button>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+    }
+    
+    if (html === '') {
+        html = '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
+    }
+    
+    listModalTitle.textContent = 'Мои события';
+    listModalBody.innerHTML = html;
+    listModalBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.open-event-btn');
+        if (btn) openEventFromList(btn.dataset.title);
+    });
+    listModalOverlay.classList.add('active');
+    tg.BackButton.show();
+}
 
         // ============================================================
         // ОБРАБОТЧИКИ БЛИЖАЙШИХ
