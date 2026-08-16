@@ -582,7 +582,8 @@
         <div class="modal-content list-modal-content" id="listModalContent">
             <div class="modal-header">
                 <h3 id="listModalTitle">События</h3>
-                <button class="modal-close" id="listModalCloseBtn">×</button>
+                <!-- Добавлен onclick для гарантированного закрытия -->
+                <button class="modal-close" id="listModalCloseBtn" onclick="closeListModal()">×</button>
             </div>
             <div id="listModalBody"></div>
         </div>
@@ -636,16 +637,11 @@
         // ============================================================
         // СЕКЦИЯ: БАЗА ПОЛЬЗОВАТЕЛЕЙ (TELEGRAM USERS)
         // ============================================================
-        // В этом объекте сопоставляем понятное имя (латиницей) с реальными данными.
-        // id – числовой Telegram ID (обязательно, если у пользователя нет username).
-        // username – строка с @ или без (если есть).
-        // Если username нет, можно указать null или вообще опустить поле.
         const USER_DB = {
             'Ivan': { id: 123456789, username: '@ivan' },
             'Petr': { id: 987654321, username: '@petr' },
-            'Sidor': { id: 555555555, username: null },      // без username
-            'UserWithoutUsername': { id: 222222222, username: null } // без username
-            // Добавляйте новых пользователей по аналогии
+            'Sidor': { id: 555555555, username: null },
+            'UserWithoutUsername': { id: 222222222, username: null }
         };
 
         // ============================================================
@@ -660,7 +656,7 @@
         };
 
         // ============================================================
-        // СЕКЦИЯ: КЛУБЫ (club) с GPS координатами (для разных мест в одном городе)
+        // СЕКЦИЯ: КЛУБЫ (club) с GPS координатами
         // ============================================================
         const clubData = {
             'moscow_club_a': { name: 'Клуб А, Москва', lat: 55.7500, lon: 37.6100 },
@@ -670,7 +666,7 @@
         };
 
         // ============================================================
-        // СЕКЦИЯ: СТАТУСЫ МЕРОПРИЯТИЙ (цвета)
+        // СЕКЦИЯ: СТАТУСЫ МЕРОПРИЯТИЙ
         // ============================================================
         const statusConfig = {
             'finish':   { name: 'Завершено',  color: '#e74c3c', svg: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` },
@@ -687,7 +683,6 @@
         // ============================================================
         // СЕКЦИЯ: ДАННЫЕ СОБЫТИЙ
         // ============================================================
-        // В поле participants указываются имена из USER_DB.
         const eventsData = {
             '2025-11-15': [
                 {
@@ -763,13 +758,10 @@
         // ============================================================
         // СЕКЦИЯ: ПРЕОБРАЗОВАНИЕ УЧАСТНИКОВ
         // ============================================================
-        // Функция принимает массив имён участников (или старые поля users/userIds)
-        // и возвращает объект с массивами users (username) и userIds (id).
         function resolveParticipants(event) {
             const users = [];
             const userIds = [];
 
-            // Если указаны participants (новый формат)
             if (event.participants && Array.isArray(event.participants)) {
                 event.participants.forEach(participantName => {
                     const user = USER_DB[participantName];
@@ -786,7 +778,7 @@
                 });
             }
 
-            // Обратная совместимость: если в событии есть старые поля
+            // Обратная совместимость
             if (event.users && Array.isArray(event.users)) {
                 event.users.forEach(u => {
                     if (!users.includes(u)) users.push(u);
@@ -816,7 +808,6 @@
                     const key = ev.title;
 
                     if (!mergedMap.has(key)) {
-                        // Инициализируем объединённый объект
                         mergedMap.set(key, {
                             title: ev.title,
                             dates: [],
@@ -827,8 +818,8 @@
                             guest: ev.guest,
                             status: ev.status,
                             description: ev.description,
-                            users: [],      // будет заполнено ниже
-                            userIds: [],    // будет заполнено ниже
+                            users: [],
+                            userIds: [],
                             links: ev.links || []
                         });
                     }
@@ -837,7 +828,6 @@
                     merged.dates.push(dateKey);
                     merged.subtitles.push(ev.subtitle || '');
 
-                    // Получаем участников из события и объединяем
                     const { users, userIds } = resolveParticipants(ev);
                     users.forEach(u => {
                         if (!merged.users.includes(u)) merged.users.push(u);
@@ -1286,7 +1276,6 @@
                         break;
                     }
                     case 'all': {
-                        // Ничего не делаем
                         break;
                     }
                 }
@@ -1321,7 +1310,6 @@
                 });
             });
 
-            // Автоматическое обновление при изменении месяца/года, если активен "Выбор месяца"
             pickerMonthSelect.addEventListener('change', () => {
                 if (currentFilter === 'specific') applyAllFilters();
             });
@@ -1347,6 +1335,20 @@
             tg.BackButton.show();
             applyAllFilters();
         }
+
+        // ============================================================
+        // ЗАКРЫТИЕ СПИСКОВОГО ОКНА (гарантированное)
+        // ============================================================
+        function closeListModal() {
+            listModalOverlay.classList.remove('active');
+            tg.BackButton.hide();
+        }
+
+        // Дополнительные обработчики (на случай, если onclick не сработает)
+        listModalCloseBtn.addEventListener('click', closeListModal);
+        listModalOverlay.addEventListener('click', (e) => {
+            if (e.target === listModalOverlay) closeListModal();
+        });
 
         // ============================================================
         // СЕКЦИЯ: "МОИ СОБЫТИЯ" (гибридная фильтрация)
