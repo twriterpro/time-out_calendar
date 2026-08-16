@@ -68,13 +68,18 @@
             /* Глобус */
             --globe-size: 36px;
 
+            /* Цвета кнопок и акцентов */
+            --btn-bg: #E9FDF0;
+            --btn-text: #1E9F57;
+
             /* Объемный флажок */
             --flag-pole-height: 24px;
             --flag-width: 20px;
             --flag-height: 14px;
-            --flag-primary-color: #e74c3c;
-            --flag-secondary-color: #c0392b;
             --flag-shadow: 0 3px 6px rgba(0,0,0,0.3);
+
+            /* Анимация мигания */
+            --blink-duration: 1s;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -112,8 +117,9 @@
                 --badge-border: 1px solid rgba(0,0,0,0.3);
                 --apply-btn-bg: var(--calendar-accent);
                 --apply-btn-text: #000000;
-                --flag-primary-color: #ff6b6b;
-                --flag-secondary-color: #d9534f;
+                --btn-bg: #1E2A1E;
+                --btn-text: #64b5f6;
+                --flag-shadow: 0 3px 6px rgba(0,0,0,0.6);
             }
         }
 
@@ -158,7 +164,7 @@
         .month-select,
         .year-select {
             background: var(--tg-secondary-bg-color);
-            color: var(--calendar-text);
+            color: var(--btn-text); /* акцентный цвет для выбранного значения */
             border: 1px solid var(--calendar-muted);
             border-radius: 8px;
             padding: 6px 8px;
@@ -173,7 +179,7 @@
         .year-select:focus { border-color: var(--calendar-accent); box-shadow:0 0 0 3px rgba(36,129,204,0.2); }
 
         .nav-btn {
-            background:none; border:none; font-size:1.8rem; line-height:1; cursor:pointer; color:var(--calendar-accent); padding:0 8px; transition: transform 0.2s ease, opacity 0.2s ease; outline:none; -webkit-tap-highlight-color: transparent;
+            background:none; border:none; font-size:1.8rem; line-height:1; cursor:pointer; color: var(--btn-text); padding:0 8px; transition: transform 0.2s ease, opacity 0.2s ease; outline:none; -webkit-tap-highlight-color: transparent;
         }
         .nav-btn:active { transform:scale(0.8); opacity:0.7; }
 
@@ -219,42 +225,28 @@
             align-items: center;
             flex-wrap: wrap;
         }
+        /* Обновлённые кнопки */
         .action-btn,
-        .nearest-select {
-            flex:1; padding:12px 16px; border:none; border-radius:12px; background:var(--calendar-accent);
-            color:var(--calendar-accent-text); font-size:0.95rem; font-weight:600; cursor:pointer;
+        .nearest-select,
+        .my-events-btn {
+            flex:1; padding:12px 16px; border:none; border-radius:12px; background: var(--btn-bg);
+            color: var(--btn-text); font-size:0.95rem; font-weight:600; cursor:pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-            -webkit-tap-highlight-color: transparent; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.1);
+            -webkit-tap-highlight-color: transparent; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.05);
             appearance: none;
             min-width: 0;
         }
         .action-btn:active,
-        .nearest-select:active { transform:scale(0.95); opacity:0.8; }
+        .nearest-select:active,
+        .my-events-btn:active { transform:scale(0.95); opacity:0.8; }
         .nearest-select {
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>');
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%231E9F57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>');
             background-repeat: no-repeat;
             background-position: right 10px center;
             padding-right: 30px;
+            border: none; /* убираем рамку */
+            color: var(--btn-text);
         }
-        .my-events-btn {
-            flex: 1;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 12px;
-            background: var(--calendar-accent);
-            color: var(--calendar-accent-text);
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-            -webkit-tap-highlight-color: transparent;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .my-events-btn:active { transform: scale(0.95); opacity: 0.8; }
 
         .modal-overlay {
             position:fixed; top:0; left:0; width:100%; height:100%; background:var(--calendar-modal-overlay);
@@ -298,6 +290,16 @@
             overflow: hidden;
         }
 
+        /* Индикатор статуса в списках */
+        .status-indicator {
+            display:inline-block;
+            width:12px;
+            height:12px;
+            border-radius:50%;
+            margin-right:6px;
+            vertical-align:middle;
+        }
+
         .filter-container { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; }
         .filter-btn {
             padding:8px 12px; border:none; border-radius:20px; background:var(--filter-btn-bg); color:var(--filter-btn-text);
@@ -329,7 +331,7 @@
         }
         .list-modal-overlay.active .modal-content { transform: translateY(0); opacity:1; }
 
-        /* Иконка глобуса: просто эмодзи, без анимации */
+        /* Иконка глобуса */
         .globe-btn {
             background: none;
             border: none;
@@ -367,11 +369,11 @@
             background: var(--tg-secondary-bg-color);
         }
         .map-header h3 {
-            color: var(--calendar-text);
+            color: #1E9F57; /* новый цвет заголовка */
             margin: 0;
         }
 
-        /* Объемный флажок для маркеров */
+        /* Объемный флажок */
         .custom-flag-marker {
             display: flex;
             flex-direction: column;
@@ -407,7 +409,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
 
-        /* Стили для планируемых флажков (plan) */
+        /* Стили для планируемых флажков */
         .custom-flag-marker.plan-flag .flag-canvas {
             background: #bdc3c7;
             border: 1px dashed #7f8c8d;
@@ -422,12 +424,37 @@
             color: #fff;
         }
 
+        /* Метка "ИГРАЕМ СЕЙЧАС" */
+        .play-label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #2ecc71;
+            text-shadow: 0 0 4px rgba(0,0,0,0.5);
+            animation: blink var(--blink-duration) infinite;
+            white-space: nowrap;
+            margin-bottom: 2px;
+        }
+
+        /* Мигание для флажка play */
+        .blink-flag .flag-canvas {
+            animation: blinkFlag var(--blink-duration) infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+        @keyframes blinkFlag {
+            0%, 100% { box-shadow: 0 0 5px #2ecc71; }
+            50% { box-shadow: 0 0 15px #2ecc71; }
+        }
+
         /* Легенда карты */
         .map-legend {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             border-radius: 8px;
             padding: 8px 10px;
             font-family: var(--font-family);
@@ -435,20 +462,29 @@
             color: #333;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             z-index: 1000;
-            pointer-events: none;
+            pointer-events: auto;
+            user-select: none;
         }
         .map-legend-item {
             display: flex;
             align-items: center;
             gap: 6px;
-            margin: 3px 0;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
         }
-        .map-legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
+        .map-legend-item.disabled {
+            opacity: 0.4;
         }
+        .legend-flag {
+            width: 16px;
+            height: 14px;
+            background: linear-gradient(135deg, var(--flag-primary-color) 0%, var(--flag-secondary-color) 100%);
+            clip-path: polygon(0 0, 100% 50%, 0 100%);
+            margin-left: -2px;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .legend-flag.plan { background: #bdc3c7; border: 1px dashed #7f8c8d; clip-path: none; border-radius: 2px; }
 
         .ol-popup {
             position: absolute;
@@ -504,6 +540,7 @@
             .flag-pole { height: 20px; }
             .flag-width { width: 16px; }
             .flag-height { height: 12px; }
+            .map-legend { font-size: 0.7rem; padding: 5px 8px; }
         }
     </style>
 </head>
@@ -561,7 +598,7 @@
     <div class="modal-overlay map-modal" id="mapModalOverlay">
         <div class="modal-content" id="mapModalContent">
             <div class="map-header">
-                <h3>Карта мероприятий</h3>
+                <h3>Карта выездов и мероприятий Тайм-Аут</h3>
                 <button class="modal-close" id="mapModalCloseBtn">×</button>
             </div>
             <div class="map-container" id="mapContainer"></div>
@@ -624,7 +661,7 @@
         };
 
         // ============================================================
-        // СЕКЦИЯ: СТАТУСЫ МЕРОПРИЯТИЙ (цвета для карты)
+        // СЕКЦИЯ: СТАТУСЫ МЕРОПРИЯТИЙ (цвета)
         // ============================================================
         const statusConfig = {
             'finish':   { name: 'Завершено',  color: '#e74c3c', svg: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` },
@@ -730,11 +767,13 @@
                 }
             ]
         };
-
         // ============================================================
         // СЕКЦИЯ: ОБЪЕДИНЕНИЕ СОБЫТИЙ ПО TITLE
         // ============================================================
+        let mergedEventsCache = null;
+
         function getMergedEvents() {
+            if (mergedEventsCache) return mergedEventsCache;
             const mergedMap = new Map();
             for (const [dateKey, events] of Object.entries(eventsData)) {
                 events.forEach(ev => {
@@ -759,7 +798,30 @@
                     merged.subtitles.push(ev.subtitle || '');
                 });
             }
-            return Array.from(mergedMap.values());
+            mergedEventsCache = Array.from(mergedMap.values());
+            return mergedEventsCache;
+        }
+
+        // ============================================================
+        // СЕКЦИЯ: АВТОМАТИЧЕСКОЕ ОПРЕДЕЛЕНИЕ СТАТУСА
+        // ============================================================
+        function getEffectiveStatus(event, title) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+            const merged = getMergedEvents().find(m => m.title === title);
+            if (!merged) return event.status; // fallback
+            const dates = merged.dates.map(d => d); // строка YYYY-MM-DD
+            dates.sort();
+            const minDate = dates[0];
+            const maxDate = dates[dates.length - 1];
+            if (todayKey >= minDate && todayKey <= maxDate) {
+                return 'play';
+            } else if (todayKey > maxDate) {
+                return 'finish';
+            } else {
+                return event.status; // будущее событие, сохраняем исходный статус
+            }
         }
 
         // ============================================================
@@ -792,6 +854,8 @@
         let selectedDate = null;
         let selectedDayElement = null;
         let mapInstance = null;
+        let markerEntries = []; // для фильтрации легенды
+        let activeStatuses = new Set(); // активные статусы в легенде
 
         const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
         const START_YEAR = 2025;
@@ -858,17 +922,20 @@
 
                 const events = eventsData[cellKey];
                 if (events && events.length > 0) {
-                    const firstStatus = getStatusConfig(events[0].status);
+                    // Для каждого события вычисляем эффективный статус
+                    const effectiveStatuses = events.map(ev => getEffectiveStatus(ev, ev.title));
+                    const firstStatus = getStatusConfig(effectiveStatuses[0]);
                     dayCell.style.backgroundColor = hexToRgba(firstStatus.color, 0.15);
 
-                    if (events.some(ev => ev.status === 'plan')) {
+                    if (effectiveStatuses.includes('plan')) {
                         dayCell.classList.add('plan');
                     }
 
                     const badgesContainer = document.createElement('div');
                     badgesContainer.className = 'badges-container';
-                    events.forEach(ev => {
-                        const st = getStatusConfig(ev.status);
+                    events.forEach((ev, index) => {
+                        const effStatus = effectiveStatuses[index];
+                        const st = getStatusConfig(effStatus);
                         const badge = document.createElement('div');
                         badge.className = 'badge';
                         badge.style.backgroundColor = st.color;
@@ -904,9 +971,10 @@
             modalDate.textContent = `${d} ${months[m-1]} ${y}`;
             let eventsHTML = '';
             events.forEach(ev => {
-                const st = getStatusConfig(ev.status);
+                const effStatus = getEffectiveStatus(ev, ev.title);
+                const st = getStatusConfig(effStatus);
                 const statusBadge = `<span class="badge" style="background:${st.color}; display:inline-block; width:16px; height:16px; border-radius:50%; vertical-align:middle; margin-right:5px;">${st.svg}</span>`;
-                const planNote = ev.status === 'plan' ? '<div style="color:#95a5a6; font-weight:600; margin-bottom:5px;">📋 Планируется</div>' : '';
+                const planNote = effStatus === 'plan' ? '<div style="color:#95a5a6; font-weight:600; margin-bottom:5px;">📋 Планируется</div>' : '';
                 const cityName = cityData[ev.city]?.name || ev.city;
                 const clubName = ev.club ? clubData[ev.club]?.name || ev.club : '';
                 const locationInfo = `${cityName}${clubName ? ', ' + clubName : ''}`;
@@ -1013,9 +1081,13 @@
                 const subtitleHtml = subtitles.length
                     ? subtitles.map(s => `<div style="font-size:0.8rem; color:var(--calendar-muted); margin-top:3px;">• ${s}</div>`).join('')
                     : '';
+                // Определяем эффективный статус (для кружочка)
+                const effStatus = getEffectiveStatus(ev, ev.title);
+                const st = getStatusConfig(effStatus);
+                const statusDot = `<span class="status-indicator" style="background:${st.color};"></span>`;
                 html += `
                     <div class="event-date-group" data-title="${ev.title}">
-                        <div class="event-date-header">${dateStr}</div>
+                        <div class="event-date-header">${statusDot}${dateStr}</div>
                         <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
                         ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
                         ${subtitleHtml}
@@ -1159,7 +1231,10 @@
 
                 const statusVal = statusFilter.value;
                 if (statusVal !== 'all') {
-                    filtered = filtered.filter(ev => ev.status === statusVal);
+                    filtered = filtered.filter(ev => {
+                        const eff = getEffectiveStatus(ev, ev.title);
+                        return eff === statusVal;
+                    });
                 }
 
                 const cityVal = cityFilter.value;
@@ -1198,7 +1273,10 @@
                 });
                 const statusVal = statusFilter.value;
                 if (statusVal !== 'all') {
-                    filtered = filtered.filter(ev => ev.status === statusVal);
+                    filtered = filtered.filter(ev => {
+                        const eff = getEffectiveStatus(ev, ev.title);
+                        return eff === statusVal;
+                    });
                 }
                 const cityVal = cityFilter.value;
                 if (cityVal !== 'all') {
@@ -1223,7 +1301,7 @@
         }
 
         // ============================================================
-        // СЕКЦИЯ: ЗАКРЫТИЕ СПИСКОВОГО ОКНА (ИСПРАВЛЕНО)
+        // СЕКЦИЯ: ЗАКРЫТИЕ СПИСКОВОГО ОКНА
         // ============================================================
         function closeListModal() {
             listModalOverlay.classList.remove('active');
@@ -1245,9 +1323,9 @@
 
             const groupedByStatus = {};
             myMerged.forEach(ev => {
-                const status = ev.status;
-                if (!groupedByStatus[status]) groupedByStatus[status] = [];
-                groupedByStatus[status].push(ev);
+                const eff = getEffectiveStatus(ev, ev.title);
+                if (!groupedByStatus[eff]) groupedByStatus[eff] = [];
+                groupedByStatus[eff].push(ev);
             });
 
             let html = '';
@@ -1263,9 +1341,10 @@
                     const dateStr = firstDate === lastDate
                         ? formatDateForDisplay(firstDate)
                         : `${formatDateForDisplay(firstDate)} - ${formatDateForDisplay(lastDate)}`;
+                    const statusDot = `<span class="status-indicator" style="background:${st.color};"></span>`;
                     html += `
                         <div class="event-date-group" data-title="${ev.title}">
-                            <div class="event-date-header">${dateStr}</div>
+                            <div class="event-date-header">${statusDot}${dateStr}</div>
                             <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
                             ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
                             <button class="action-btn open-event-btn" style="font-size:0.8rem; padding:5px 10px;" data-title="${ev.title}">Подробнее</button>
@@ -1345,7 +1424,7 @@
         });
 
         // ============================================================
-        // СЕКЦИЯ: КАРТА (OpenLayers) с легендой и цветами
+        // СЕКЦИЯ: КАРТА (OpenLayers) с легендой и фильтрацией
         // ============================================================
         window.openMapModal = function() {
             mapModalOverlay.classList.add('active');
@@ -1384,16 +1463,37 @@
                     locationEventsMap[locationKey].events.push(merged);
                 });
 
+                markerEntries = []; // сброс
+
                 // Добавляем маркеры
                 Object.values(locationEventsMap).forEach(loc => {
+                    // Вычисляем набор статусов в этой локации
+                    const statuses = new Set();
+                    loc.events.forEach(ev => {
+                        const eff = getEffectiveStatus(ev, ev.title);
+                        statuses.add(eff);
+                    });
+                    // Определяем цвет флажка по приоритету
+                    let color = '#e74c3c'; // finish по умолчанию
+                    if (statuses.has('play')) color = '#2ecc71';
+                    else if (statuses.has('current')) color = '#f1c40f';
+                    else if (statuses.has('closest')) color = '#9b59b6';
+                    else if (statuses.has('finish')) color = '#e74c3c';
+                    else if (statuses.has('plan')) color = '#95a5a6';
+
                     const flagEl = document.createElement('div');
-                    // Определяем класс для планируемых
-                    const isPlan = loc.events.some(ev => ev.status === 'plan');
-                    flagEl.className = 'custom-flag-marker' + (isPlan ? ' plan-flag' : '');
-                    flagEl.innerHTML = `
-                        <div class="flag-pole"></div>
-                        <div class="flag-canvas"></div>
-                        <div class="flag-count">${loc.events.length}</div>
+                    flagEl.className = 'custom-flag-marker';
+                    if (statuses.has('plan') && !statuses.has('play') && !statuses.has('current') && !statuses.has('closest') && !statuses.has('finish')) {
+                        flagEl.classList.add('plan-flag');
+                    }
+                    if (statuses.has('play')) {
+                        flagEl.classList.add('blink-flag');
+                        flagEl.innerHTML = `<div class="play-label">ИГРАЕМ СЕЙЧАС</div>`;
+                    }
+                    flagEl.innerHTML += `
+                        <div class="flag-pole" style="background:${color};"></div>
+                        <div class="flag-canvas" style="background:linear-gradient(135deg, ${color} 0%, ${color} 100%);"></div>
+                        <div class="flag-count" style="background:${color};">${loc.events.length}</div>
                     `;
 
                     const marker = new ol.Overlay({
@@ -1404,17 +1504,19 @@
                     });
                     mapInstance.addOverlay(marker);
 
-                    // Попап с информацией
+                    // Попап
                     const popupElement = document.createElement('div');
                     popupElement.className = 'ol-popup';
                     popupElement.innerHTML = `<strong>${loc.name}</strong><br>Мероприятий: ${loc.events.length}`;
                     loc.events.forEach(ev => {
+                        const effStatus = getEffectiveStatus(ev, ev.title);
+                        const st = getStatusConfig(effStatus);
                         const datesStr = ev.dates.length > 1
                             ? `${formatDateForDisplay(ev.dates[0])} - ${formatDateForDisplay(ev.dates[ev.dates.length-1])}`
                             : formatDateForDisplay(ev.dates[0]);
                         popupElement.innerHTML += `
                             <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
-                                <span style="background:${getStatusConfig(ev.status).color}; display:inline-block; width:10px; height:10px; border-radius:50%;"></span>
+                                <span style="background:${st.color}; display:inline-block; width:10px; height:10px; border-radius:50%;"></span>
                                 <strong>${ev.title}</strong><br>
                                 <small>${datesStr}</small><br>
                                 ${ev.description ? `<small>${ev.description}</small><br>` : ''}
@@ -1436,18 +1538,57 @@
                     mapInstance.on('click', () => {
                         popup.setPosition(undefined);
                     });
+
+                    // Сохраняем для фильтрации
+                    markerEntries.push({
+                        overlay: marker,
+                        element: flagEl,
+                        statuses: statuses
+                    });
                 });
 
-                // Добавляем легенду
+                // Создаём легенду
                 const legend = document.createElement('div');
                 legend.className = 'map-legend';
                 legend.innerHTML = `
-                    <div class="map-legend-item"><span class="map-legend-dot" style="background:#e74c3c;"></span> играли</div>
-                    <div class="map-legend-item"><span class="map-legend-dot" style="background:#f1c40f;"></span> готовимся играть</div>
-                    <div class="map-legend-item"><span class="map-legend-dot" style="background:#2ecc71;"></span> играем сейчас</div>
-                    <div class="map-legend-item"><span class="map-legend-dot" style="background:#95a5a6; border:1px dashed #7f8c8d;"></span> планируется</div>
+                    <div class="map-legend-item" data-status="finish"><span class="legend-flag" style="background:linear-gradient(135deg, #e74c3c, #c0392b);"></span> играли</div>
+                    <div class="map-legend-item" data-status="current"><span class="legend-flag" style="background:linear-gradient(135deg, #f1c40f, #d4ac0d);"></span> готовимся играть</div>
+                    <div class="map-legend-item" data-status="play"><span class="legend-flag" style="background:linear-gradient(135deg, #2ecc71, #27ae60);"></span> играем сейчас</div>
+                    <div class="map-legend-item" data-status="closest"><span class="legend-flag" style="background:linear-gradient(135deg, #9b59b6, #7d3c98);"></span> ближайшие</div>
+                    <div class="map-legend-item" data-status="plan"><span class="legend-flag plan"></span> планируется</div>
                 `;
                 mapContainer.appendChild(legend);
+
+                // Обработчики кликов по легенде
+                const legendItems = legend.querySelectorAll('.map-legend-item');
+                legendItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        const status = item.dataset.status;
+                        if (activeStatuses.has(status)) {
+                            activeStatuses.delete(status);
+                            item.classList.remove('disabled');
+                        } else {
+                            activeStatuses.add(status);
+                            item.classList.add('disabled');
+                        }
+                        applyLegendFilter();
+                    });
+                });
+
+                function applyLegendFilter() {
+                    markerEntries.forEach(entry => {
+                        if (activeStatuses.size === 0) {
+                            entry.overlay.setElement(entry.element);
+                        } else {
+                            const intersection = [...entry.statuses].some(s => activeStatuses.has(s));
+                            if (intersection) {
+                                entry.overlay.setElement(entry.element);
+                            } else {
+                                entry.overlay.setElement(null); // скрыть
+                            }
+                        }
+                    });
+                }
 
                 // Анимация приближения
                 setTimeout(() => {
