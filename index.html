@@ -319,6 +319,40 @@
         }
         .filter-btn.active { background:var(--filter-btn-active-bg); color:var(--filter-btn-active-text); }
 
+        /* ============================================================
+           ЧЕКБОКС "МОИ ИГРЫ" В ФИЛЬТРЕ "ВСЕ МЕРОПРИЯТИЯ"
+           ============================================================ */
+        .filter-my-events {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--filter-btn-text);
+            user-select: none;
+            white-space: nowrap;
+        }
+        .filter-my-events input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #fff;          /* белая тонкая рамка */
+            border-radius: 4px;              /* скругление */
+            background: transparent;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            margin: 0;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            padding: 2px;                    /* зазор */
+            background-clip: content-box;
+        }
+        .filter-my-events input[type="checkbox"]:checked {
+            background-color: #fff;          /* белая заливка */
+            border-color: #fff;
+        }
+
         .month-picker-container,
         .status-city-container {
             display:none; margin-bottom:15px; gap:8px; align-items:center; flex-wrap:wrap;
@@ -1195,6 +1229,16 @@
             return `${d} ${months[m-1]} ${y}`;
         }
 
+        function isUserParticipant(ev) {
+            const user = tg.initDataUnsafe?.user;
+            if (!user) return false;
+            const username = user.username ? user.username.toLowerCase() : null;
+            const userId = user.id ? Number(user.id) : null;
+            if (username && ev.users.some(u => u.toLowerCase() === '@' + username)) return true;
+            if (userId && ev.userIds.includes(userId)) return true;
+            return false;
+        }
+        
         // ============================================================
         // ОКНО "ВСЕ МЕРОПРИЯТИЯ" (исправлена логика фильтра "Выбор месяца")
         // ============================================================
@@ -1207,6 +1251,10 @@
                     <button class="filter-btn" data-filter="year">За год</button>
                     <button class="filter-btn" data-filter="specific">Выбор месяца</button>
                     <button class="filter-btn" data-filter="all">За все время</button>
+                    <label class="filter-my-events" title="Показать только мои события">
+                        <input type="checkbox" id="myEventsFilterCheckbox">
+                        <span>мои игры</span>
+                    </label>
                 </div>
                 <div class="month-picker-container" id="monthPickerContainer">
                     <select class="picker-select" id="pickerMonthSelect"></select>
@@ -1238,6 +1286,7 @@
             const applyMonthFilterBtn = document.getElementById('applyMonthFilter');
             const statusFilter = document.getElementById('statusFilter');
             const cityFilter = document.getElementById('cityFilter');
+            const myEventsFilterCheckbox = document.getElementById('myEventsFilterCheckbox');
 
             const now = new Date();
             months.forEach((mName, idx) => {
@@ -1327,7 +1376,13 @@
                     filtered = filtered.filter(ev => ev.city === cityVal);
                 }
 
+                // Фильтр "мои игры"
+                if (myEventsFilterCheckbox.checked) {
+                    filtered = filtered.filter(ev => isUserParticipant(ev));
+                }
+
                 eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
+                myEventsFilterCheckbox.addEventListener('change', applyAllFilters);
             }
 
             filterButtons.forEach(btn => {
