@@ -164,7 +164,7 @@
         .month-select,
         .year-select {
             background: var(--tg-secondary-bg-color);
-            color: #1E9F57 !important; /* Яркий зелёный цвет текста выбранного значения */
+            color: #1E9F57 !important;
             -webkit-text-fill-color: #1E9F57;
             border: 1px solid var(--calendar-muted);
             border-radius: 8px;
@@ -226,13 +226,12 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        /* Обновлённые кнопки с фоном #E9FDF0 */
         .action-btn,
         .nearest-select,
         .my-events-btn {
             flex:1; padding:12px 16px; border:none; border-radius:12px;
-            background: #E9FDF0 !important; /* Фон кнопок в светлой теме */
-            color: #1E9F57; /* Цвет текста */
+            background: #E9FDF0 !important;
+            color: #1E9F57;
             font-size:0.95rem; font-weight:600; cursor:pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
             -webkit-tap-highlight-color: transparent; text-align:center;
@@ -248,7 +247,7 @@
             background-repeat: no-repeat;
             background-position: right 10px center;
             padding-right: 30px;
-            border: none; /* убираем рамку */
+            border: none;
         }
 
         .modal-overlay {
@@ -293,7 +292,6 @@
             overflow: hidden;
         }
 
-        /* Индикатор статуса в списках */
         .status-indicator {
             display:inline-block;
             width:12px;
@@ -334,7 +332,6 @@
         }
         .list-modal-overlay.active .modal-content { transform: translateY(0); opacity:1; }
 
-        /* Иконка глобуса */
         .globe-btn {
             background: none;
             border: none;
@@ -350,7 +347,6 @@
             justify-content: center;
         }
 
-        /* Модальное окно карты */
         .map-modal .modal-content {
             width: 90%;
             max-width: 600px;
@@ -372,11 +368,10 @@
             background: var(--tg-secondary-bg-color);
         }
         .map-header h3 {
-            color: #1E9F57; /* новый цвет заголовка */
+            color: #1E9F57;
             margin: 0;
         }
 
-        /* Объемный флажок */
         .custom-flag-marker {
             display: flex;
             flex-direction: column;
@@ -412,7 +407,6 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
 
-        /* Стили для планируемых флажков */
         .custom-flag-marker.plan-flag .flag-canvas {
             background: #bdc3c7;
             border: 1px dashed #7f8c8d;
@@ -427,7 +421,6 @@
             color: #fff;
         }
 
-        /* Метка "ИГРАЕМ СЕЙЧАС" */
         .play-label {
             font-size: 0.8rem;
             font-weight: bold;
@@ -438,7 +431,6 @@
             margin-bottom: 2px;
         }
 
-        /* Мигание для флажка play */
         .blink-flag .flag-canvas {
             animation: blinkFlag var(--blink-duration) infinite;
         }
@@ -452,7 +444,6 @@
             50% { box-shadow: 0 0 15px #2ecc71; }
         }
 
-        /* Легенда карты */
         .map-legend {
             position: absolute;
             top: 10px;
@@ -477,7 +468,7 @@
             transition: opacity 0.2s ease;
         }
         .map-legend-item.disabled {
-            opacity: 0.4; /* Приглушаем невыбранные */
+            opacity: 0.4;
         }
         .legend-flag {
             width: 16px;
@@ -610,7 +601,7 @@
 
     <script>
         // ============================================================
-        // РЕГИСТРАЦИЯ SERVICE WORKER (офлайн-режим)
+        // РЕГИСТРАЦИЯ SERVICE WORKER (офлайн-режим и автообновление)
         // ============================================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -679,20 +670,28 @@
         }
 
         // ============================================================
-        // СЕКЦИЯ: ДАННЫЕ СОБЫТИЙ (пример с полями users, club)
+        // СЕКЦИЯ: ДАННЫЕ СОБЫТИЙ
         // ============================================================
+        // В событиях теперь есть поле userIds (массив числовых ID).
+        // Для пользователей с username используем users, для без username – userIds.
+        // Пример:
+        //   users: ['@ivan', '@petr'],   – для тех, у кого username
+        //   userIds: [123456789, 987654321] – для тех, у кого нет username
+        // Если userIds не нужен, можно ставить пустой массив.
         const eventsData = {
             '2025-11-22': [
                 {
                     title: 'Тверь 22-23 ноября 🏁',
                     subtitle: 'Личный турнир',
                     city: 'tver',
+                    club: 'tver_club_1',
                     type: 'out',
                     guest: 'no',
                     status: 'finish',
                     description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
-                    location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }]
+                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }],
+                    users: ['@dmitriiananev', '@mariav2020'],
+                    userIds: [], // пусто, полагаемся на username
                 }
             ],
             '2025-11-23': [
@@ -706,7 +705,9 @@
                     status: 'finish',
                     description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
                     location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }]
+                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }],
+                    users: ['@dmitriiananev', '@mariav2020'],
+                    userIds: [], // пусто, полагаемся на username
                 }
             ],
             '2026-08-26': [
@@ -718,7 +719,9 @@
                     guest: 'no',
                     status: 'current',
                     description: 'Внутренняя тренировка команды',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }]
+                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }],
+                    users: ['@dmitriiananev', '@mariav2020'],
+                    userIds: [], // пусто, полагаемся на username
                 }
             ],
             '2026-08-16': [
@@ -730,7 +733,9 @@
                     guest: 'no',
                     status: 'play',
                     description: 'Внутренняя тренировка команды',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }]
+                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }],
+                    users: ['@dmitriiananev', '@mariav2020'],
+                    userIds: [], // пусто, полагаемся на username
                 }
             ],
             '2026-11-10': [
@@ -742,7 +747,9 @@
                     guest: 'yes',
                     status: 'closest',
                     description: 'Игра с командой из Минска',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }]
+                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }],
+                    users: ['@dmitriiananev', '@mariav2020'],
+                    userIds: [], // пусто, полагаемся на username
                 }
             ],
             '2027-01-20': [
@@ -754,7 +761,9 @@
                     guest: 'no',
                     status: 'plan',
                     description: 'Ежегодный турнир среди команд',
-                    links: []
+                    links: [],
+                    users: ['@dmitriiananev', '@mariav2020'],
+                    userIds: [], // пусто, полагаемся на username
                 }
             ],
             '2027-05-09': [
@@ -766,7 +775,9 @@
                     guest: 'no',
                     status: 'plan',
                     description: 'Игра на выезде',
-                    links: []
+                    links: [],
+                    users: ['@dmitriiananev', '@mariav2020'],
+                    userIds: [], // пусто, полагаемся на username
                 }
             ]
         };
@@ -794,6 +805,7 @@
                             status: ev.status,
                             description: ev.description,
                             users: ev.users || [],
+                            userIds: ev.userIds || [], // сохраняем userIds
                             links: ev.links || []
                         });
                     }
@@ -858,7 +870,7 @@
         let selectedDayElement = null;
         let mapInstance = null;
         let markerEntries = [];
-        let selectedStatuses = new Set(); // выбранные статусы (для легенды)
+        let selectedStatuses = new Set();
 
         const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
         const START_YEAR = 2025;
@@ -1083,7 +1095,6 @@
                 const subtitleHtml = subtitles.length
                     ? subtitles.map(s => `<div style="font-size:0.8rem; color:var(--calendar-muted); margin-top:3px;">• ${s}</div>`).join('')
                     : '';
-                // Определяем эффективный статус (для кружочка)
                 const effStatus = getEffectiveStatus(ev, ev.title);
                 const st = getStatusConfig(effStatus);
                 const statusDot = `<span class="status-indicator" style="background:${st.color};"></span>`;
@@ -1310,16 +1321,36 @@
         listModalOverlay.addEventListener('click', (e) => { if (e.target === listModalOverlay) closeListModal(); });
 
         // ============================================================
-        // СЕКЦИЯ: "МОИ СОБЫТИЯ"
+        // СЕКЦИЯ: "МОИ СОБЫТИЯ" (гибридная фильтрация)
         // ============================================================
         function openMyEvents() {
-            const username = tg.initDataUnsafe?.user?.username;
-            if (!username) {
-                alert('Не удалось получить ваш username из Telegram.');
+            // Получаем данные пользователя из Telegram WebApp
+            const user = tg.initDataUnsafe?.user;
+            if (!user) {
+                alert('Данные пользователя недоступны.');
                 return;
             }
-            const myMerged = getMergedEvents().filter(ev => ev.users.includes('@' + username));
+            const username = user.username; // может быть undefined
+            const userId = user.id;         // числовой ID (всегда есть)
+            if (!userId && !username) {
+                alert('Не удалось идентифицировать пользователя.');
+                return;
+            }
 
+            // Фильтруем объединённые события, проверяя оба поля: users (@username) и userIds (числовые ID)
+            const myMerged = getMergedEvents().filter(ev => {
+                // Проверка по username
+                if (username && ev.users.includes('@' + username)) {
+                    return true;
+                }
+                // Проверка по числовому ID
+                if (userId && ev.userIds && ev.userIds.includes(userId)) {
+                    return true;
+                }
+                return false;
+            });
+
+            // Группируем по статусам (используя эффективный статус)
             const groupedByStatus = {};
             myMerged.forEach(ev => {
                 const eff = getEffectiveStatus(ev, ev.title);
@@ -1438,7 +1469,6 @@
                     controls: ol.control.defaults.defaults().extend([new ol.control.Zoom()])
                 });
 
-                // Группируем мероприятия по локациям (клуб или город)
                 const locationEventsMap = {};
                 const mergedEvents = getMergedEvents();
                 mergedEvents.forEach(merged => {
@@ -1463,9 +1493,8 @@
                 });
 
                 markerEntries = [];
-                selectedStatuses = new Set(); // сброс при открытии
+                selectedStatuses = new Set();
 
-                // Добавляем маркеры
                 Object.values(locationEventsMap).forEach(loc => {
                     const statuses = new Set();
                     loc.events.forEach(ev => {
@@ -1543,7 +1572,6 @@
                     });
                 });
 
-                // Создаём легенду
                 const legend = document.createElement('div');
                 legend.className = 'map-legend';
                 legend.innerHTML = `
@@ -1599,7 +1627,6 @@
                     });
                 }
 
-                // Анимация приближения
                 setTimeout(() => {
                     mapInstance.getView().animate({
                         center: ol.proj.fromLonLat([37.6173, 55.7558]),
