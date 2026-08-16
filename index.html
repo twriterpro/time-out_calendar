@@ -67,8 +67,7 @@
 
             /* Глобус */
             --globe-size: 36px;
-            --globe-color: var(--calendar-accent);
-            --globe-animation-duration: 4s;
+            --globe-animation-duration: 12s;
 
             /* Объемный флажок */
             --flag-pole-height: 24px;
@@ -114,7 +113,6 @@
                 --badge-border: 1px solid rgba(0,0,0,0.3);
                 --apply-btn-bg: var(--calendar-accent);
                 --apply-btn-text: #000000;
-                --globe-color: #64b5f6;
                 --flag-primary-color: #ff6b6b;
                 --flag-secondary-color: #d9534f;
             }
@@ -220,6 +218,7 @@
         .action-buttons {
             display:flex; gap:10px; padding:15px 20px; background:var(--tg-secondary-bg-color); border-top:1px solid rgba(0,0,0,0.05);
             align-items: center;
+            flex-wrap: wrap;
         }
         .action-btn,
         .nearest-select {
@@ -228,6 +227,7 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
             -webkit-tap-highlight-color: transparent; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.1);
             appearance: none;
+            min-width: 0;
         }
         .action-btn:active,
         .nearest-select:active { transform:scale(0.95); opacity:0.8; }
@@ -236,6 +236,28 @@
             background-repeat: no-repeat;
             background-position: right 10px center;
             padding-right: 30px;
+        }
+        .my-events-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            background: var(--calendar-accent);
+            color: var(--calendar-accent-text);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .my-events-btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
         }
 
         .modal-overlay {
@@ -311,7 +333,7 @@
         }
         .list-modal-overlay.active .modal-content { transform: translateY(0); opacity:1; }
 
-        /* Глобус */
+        /* Иконка глобуса */
         .globe-btn {
             background: none;
             border: none;
@@ -320,19 +342,25 @@
             height: var(--globe-size);
             padding: 0;
             -webkit-tap-highlight-color: transparent;
-            perspective: 400px;
+            perspective: 500px;
+            display: inline-block;
         }
-        .globe-icon {
+        .globe-icon-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: spinGlobe var(--globe-animation-duration) linear infinite;
+        }
+        .globe-svg {
             width: 100%;
             height: 100%;
             display: block;
-            animation: spin var(--globe-animation-duration) linear infinite;
-            transform-style: preserve-3d;
-            transform-origin: center;
+            transform: rotateX(20deg);
         }
-        @keyframes spin {
-            from { transform: rotateY(0deg) rotateX(20deg); }
-            to { transform: rotateY(360deg) rotateX(20deg); }
+        @keyframes spinGlobe {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
         }
 
         /* Модальное окно карты */
@@ -355,13 +383,11 @@
             align-items: center;
             background: var(--tg-secondary-bg-color);
         }
-        /* Исправление: явно задаём цвет заголовка */
         .map-header h3 {
             color: var(--calendar-text);
             margin: 0;
         }
 
-        /* Объемный флажок для маркеров */
         .custom-flag-marker {
             display: flex;
             flex-direction: column;
@@ -370,9 +396,7 @@
             filter: drop-shadow(var(--flag-shadow));
             transition: transform 0.2s ease;
         }
-        .custom-flag-marker:hover {
-            transform: scale(1.1);
-        }
+        .custom-flag-marker:hover { transform: scale(1.1); }
         .flag-pole {
             width: 2px;
             height: var(--flag-pole-height);
@@ -399,7 +423,6 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
 
-        /* Стили для попапов OpenLayers */
         .ol-popup {
             position: absolute;
             background: white;
@@ -411,6 +434,7 @@
             font-family: var(--font-family);
             color: #333;
             min-width: 150px;
+            z-index: 999;
         }
         .ol-popup:after, .ol-popup:before {
             top: 100%;
@@ -442,7 +466,7 @@
             .day-cell { font-size:0.85rem; border-radius:8px; }
             .modal-content { padding:15px; width:95%; }
             .action-buttons { padding:10px 12px; gap:6px; flex-wrap: wrap; }
-            .action-btn, .nearest-select { font-size:0.85rem; padding:10px; }
+            .action-btn, .nearest-select, .my-events-btn { font-size:0.85rem; padding:10px; }
             .event-date-group { padding:10px 12px; }
             .filter-btn { font-size:0.75rem; padding:6px 10px; }
             .picker-select { font-size:0.8rem; padding:5px 8px; }
@@ -466,16 +490,47 @@
             <select class="month-select" id="monthSelect"></select>
             <select class="year-select" id="yearSelect"></select>
             <button class="nav-btn" id="nextMonthBtn">›</button>
-            <!-- Иконка глобуса: стандартный земной шар с анимацией вращения -->
+            <!-- Иконка глобуса -->
             <button class="globe-btn" id="globeBtn" title="Карта мира">
-                <svg class="globe-icon" viewBox="0 0 24 24" fill="none" stroke="var(--globe-color)" stroke-width="1.5">
-                    <circle cx="12" cy="12" r="10" fill="none" />
-                    <ellipse cx="12" cy="12" rx="5" ry="10" stroke="var(--globe-color)" fill="none" />
-                    <ellipse cx="12" cy="12" rx="9" ry="4" stroke="var(--globe-color)" fill="none" />
-                    <line x1="2" y1="12" x2="22" y2="12" stroke="var(--globe-color)" />
-                    <line x1="12" y1="2" x2="12" y2="4" stroke="var(--globe-color)" />
-                    <line x1="12" y1="20" x2="12" y2="22" stroke="var(--globe-color)" />
-                </svg>
+                <div class="globe-icon-wrapper">
+                    <svg class="globe-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <radialGradient id="ocean" cx="35%" cy="35%" r="65%">
+                                <stop offset="0%" stop-color="#1e90ff" />
+                                <stop offset="70%" stop-color="#0052cc" />
+                                <stop offset="100%" stop-color="#002b80" />
+                            </radialGradient>
+                            <linearGradient id="land" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#a3e635" />
+                                <stop offset="50%" stop-color="#22c55e" />
+                                <stop offset="100%" stop-color="#15803d" />
+                            </linearGradient>
+                            <radialGradient id="atmosphere" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0" />
+                                <stop offset="80%" stop-color="#000000" stop-opacity="0.1" />
+                                <stop offset="100%" stop-color="#000000" stop-opacity="0.6" />
+                            </radialGradient>
+                            <linearGradient id="gloss" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4" />
+                                <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                            </linearGradient>
+                            <mask id="globe-mask">
+                                <circle cx="50" cy="50" r="45" fill="#ffffff" />
+                            </mask>
+                        </defs>
+                        <circle cx="50" cy="50" r="45" fill="url(#ocean)" />
+                        <g mask="url(#globe-mask)">
+                            <path d="M 40 8 C 45 7, 53 10, 50 18 C 47 22, 42 16, 40 12 Z" fill="url(#land)" />
+                            <path d="M 12 25 C 15 22, 25 20, 32 25 C 35 22, 42 22, 45 28 C 48 32, 43 40, 38 42 C 35 40, 32 45, 36 50 C 38 52, 42 51, 40 56 C 39 58, 35 55, 34 50 C 32 48, 28 50, 26 46 C 22 46, 20 40, 16 38 C 12 36, 10 32, 12 25 Z" fill="url(#land)" />
+                            <path d="M 34 51 C 38 53, 44 54, 46 58 C 49 64, 46 72, 41 78 C 38 83, 35 88, 34 91 C 33 91, 32 85, 32 80 C 32 75, 28 68, 28 62 C 28 56, 31 52, 34 51 Z" fill="url(#land)" />
+                            <circle cx="39" cy="47" r="1.5" fill="url(#land)" />
+                            <circle cx="43" cy="49" r="1" fill="url(#land)" />
+                            <path d="M 82 25 C 85 30, 92 32, 95 28 C 93 40, 85 45, 80 48 C 76 50, 75 55, 78 60 C 82 65, 88 62, 92 65 C 90 75, 82 85, 80 88 C 78 85, 78 75, 75 72 Z" fill="url(#land)" />
+                        </g>
+                        <circle cx="50" cy="50" r="45" fill="url(#atmosphere)" pointer-events="none" />
+                        <path d="M 10 35 A 45 45 0 0 1 80 15 A 43 43 0 0 0 15 42 Z" fill="url(#gloss)" pointer-events="none" />
+                    </svg>
+                </div>
             </button>
         </div>
         <div class="weekdays">
@@ -490,6 +545,7 @@
                 <option value="in_yes">Встречаем гостей</option>
             </select>
             <button class="action-btn" id="allEventsBtn">Все мероприятия</button>
+            <button class="my-events-btn" id="myEventsBtn">Мои события</button>
         </div>
     </div>
 
@@ -572,34 +628,25 @@
         };
 
         // ============================================================
+        // СЕКЦИЯ: КЛУБЫ (club) с GPS координатами (для разных мест в одном городе)
+        // ============================================================
+        const clubData = {
+            'moscow_club_a': { name: 'Клуб А, Москва', lat: 55.7500, lon: 37.6100 },
+            'moscow_club_b': { name: 'Клуб Б, Москва', lat: 55.7600, lon: 37.6200 },
+            'tver_club_1':   { name: 'Сталекс, Тверь', lat: 56.8587, lon: 35.9176 },
+            'spb_club_1':    { name: 'Клуб СПб', lat: 59.9343, lon: 30.3351 },
+            // Добавляйте новые клубы...
+        };
+
+        // ============================================================
         // СЕКЦИЯ: СТАТУСЫ МЕРОПРИЯТИЙ
         // ============================================================
         const statusConfig = {
-            'finish': {
-                name: 'Завершено',
-                color: '#95a5a6',
-                svg: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`
-            },
-            'current': {
-                name: 'В процессе подготовки',
-                color: '#3498db',
-                svg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>`
-            },
-            'play': {
-                name: 'Сейчас идет',
-                color: '#2ecc71',
-                svg: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`
-            },
-            'closest': {
-                name: 'Ближайшие',
-                color: '#e67e22',
-                svg: `<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.8 2.3 7.2-6.3-4.6L5.7 21.2 8 14 2 9.2h7.6z"/></svg>`
-            },
-            'plan': {
-                name: 'Планируемые',
-                color: '#9b59b6',
-                svg: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`
-            }
+            'finish': { name: 'Завершено', color: '#95a5a6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` },
+            'current': { name: 'В процессе подготовки', color: '#3498db', svg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>` },
+            'play': { name: 'Сейчас идет', color: '#2ecc71', svg: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>` },
+            'closest': { name: 'Ближайшие', color: '#e67e22', svg: `<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.8 2.3 7.2-6.3-4.6L5.7 21.2 8 14 2 9.2h7.6z"/></svg>` },
+            'plan': { name: 'Планируемые', color: '#9b59b6', svg: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>` }
         };
 
         function getStatusConfig(status) {
@@ -607,84 +654,112 @@
         }
 
         // ============================================================
-        // СЕКЦИЯ: ДАННЫЕ СОБЫТИЙ (пример с новыми полями)
+        // СЕКЦИЯ: ДАННЫЕ СОБЫТИЙ (пример с полями users, club)
         // ============================================================
-                const eventsData = {
-            '2025-11-22': [
+        const eventsData = {
+            '2025-11-15': [
                 {
                     title: 'Тверь 22-23 ноября 🏁',
-                    subtitle: 'Личный турнир',
+                    subtitle: '',
                     city: 'tver',
+                    club: 'tver_club_1', // конкретный клуб
                     type: 'out',
                     guest: 'no',
-                    status: 'finish',
+                    status: 'current',
                     description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
-                    location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
+                    users: ['@ivan', '@petr'],
                     links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }]
                 }
             ],
-            '2025-11-23': [
-                {
-                    title: 'Тверь 22-23 ноября 🏁',
-                    subtitle: 'Парный турнир',
-                    city: 'tver',
-                    type: 'out',
-                    guest: 'no',
-                    status: 'finish',
-                    description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
-                    location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }]
-                }
-            ],
-            '2026-08-26': [
+            '2025-12-01': [
                 {
                     title: 'Тренировка',
                     subtitle: 'Подготовка к турниру',
                     city: 'moscow',
+                    club: 'moscow_club_a',
                     type: 'in',
                     guest: 'no',
-                    status: 'current',
+                    status: 'plan',
                     description: 'Внутренняя тренировка команды',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }]
+                    users: ['@ivan', '@sidor'],
+                    links: [{ url: 'https://t.me/c/123', text: 'Перейти к теме', emoji: '' }]
                 }
             ],
-            '2026-11-10': [
+            '2026-01-10': [
                 {
                     title: 'Встречаем гостей из Минска',
                     subtitle: 'Товарищеский матч',
                     city: 'moscow',
+                    club: 'moscow_club_b',
                     type: 'in',
                     guest: 'yes',
                     status: 'closest',
                     description: 'Игра с командой из Минска',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '' }]
+                    users: ['@petr', '@sidor'],
+                    links: [{ url: 'https://t.me/c/456', text: 'Перейти к теме', emoji: '' }]
                 }
             ],
-            '2027-01-20': [
+            '2026-02-14': [
                 {
                     title: 'Турнир сообщества',
                     subtitle: 'Открытый чемпионат',
                     city: 'spb',
+                    club: 'spb_club_1',
                     type: 'in',
                     guest: 'no',
                     status: 'plan',
                     description: 'Ежегодный турнир среди команд',
+                    users: ['@ivan'],
                     links: []
                 }
             ],
-            '2027-05-09': [
+            '2026-03-05': [
                 {
                     title: 'Выезд в Казань',
                     subtitle: 'Матч',
                     city: 'kazan',
+                    // club не указан, будут использованы координаты города
                     type: 'out',
                     guest: 'no',
                     status: 'plan',
                     description: 'Игра на выезде',
+                    users: ['@petr'],
                     links: []
                 }
             ]
         };
+
+        // ============================================================
+        // СЕКЦИЯ: ОБЪЕДИНЕНИЕ СОБЫТИЙ ПО TITLE
+        // ============================================================
+        function getMergedEvents() {
+            const mergedMap = new Map();
+            for (const [dateKey, events] of Object.entries(eventsData)) {
+                events.forEach(ev => {
+                    const key = ev.title;
+                    if (!mergedMap.has(key)) {
+                        mergedMap.set(key, {
+                            title: ev.title,
+                            dates: [],
+                            subtitles: [],
+                            city: ev.city,
+                            club: ev.club || null, // сохраняем клуб
+                            type: ev.type,
+                            guest: ev.guest,
+                            status: ev.status,
+                            description: ev.description,
+                            location: ev.location,
+                            users: ev.users || [],
+                            links: ev.links || []
+                        });
+                    }
+                    const merged = mergedMap.get(key);
+                    merged.dates.push(dateKey);
+                    merged.subtitles.push(ev.subtitle || '');
+                });
+            }
+            return Array.from(mergedMap.values());
+        }
 
         // ============================================================
         // ЛОГИКА КАЛЕНДАРЯ
@@ -701,6 +776,7 @@
         const modalCloseBtn = document.getElementById('modalCloseBtn');
         const nearestSelect = document.getElementById('nearestSelect');
         const allEventsBtn = document.getElementById('allEventsBtn');
+        const myEventsBtn = document.getElementById('myEventsBtn');
         const listModalOverlay = document.getElementById('listModalOverlay');
         const listModalContent = document.getElementById('listModalContent');
         const listModalTitle = document.getElementById('listModalTitle');
@@ -830,12 +906,16 @@
                 const st = getStatusConfig(ev.status);
                 const statusBadge = `<span class="badge" style="background:${st.color}; display:inline-block; width:16px; height:16px; border-radius:50%; vertical-align:middle; margin-right:5px;">${st.svg}</span>`;
                 const planNote = ev.status === 'plan' ? '<div style="color:#9b59b6; font-weight:600; margin-bottom:5px;">📋 Планируется</div>' : '';
+                // Отображение города и клуба
+                const cityName = cityData[ev.city]?.name || ev.city;
+                const clubName = ev.club ? clubData[ev.club]?.name || ev.club : '';
+                const locationInfo = `${cityName}${clubName ? ', ' + clubName : ''}`;
                 eventsHTML += `
                     <div style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid rgba(0,0,0,0.1);">
                         ${planNote}
                         <div style="font-weight:600; margin-bottom:5px;">${statusBadge} ${ev.title}</div>
                         ${ev.subtitle ? `<div style="font-size:0.85rem; color:var(--calendar-muted); margin-bottom:5px;">${ev.subtitle}</div>` : ''}
-                        ${ev.city ? `<div style="font-size:0.85rem; color:var(--calendar-muted); margin-bottom:5px;">📍 ${cityData[ev.city]?.name || ev.city}</div>` : ''}
+                        <div style="font-size:0.85rem; color:var(--calendar-muted); margin-bottom:5px;">📍 ${locationInfo}</div>
                         <div style="font-size:0.9rem; color:var(--calendar-muted); margin-bottom:8px;">${ev.description || ''}</div>
                         ${ev.image ? `<img src="${ev.image}" alt="${ev.title}" style="max-width:100%; border-radius:8px; margin:8px 0;">` : ''}
                         ${ev.links && ev.links.length ? `
@@ -916,44 +996,48 @@
             const [y,m,d] = dateKey.split('-').map(Number);
             return new Date(y, m-1, d);
         }
-        function getAllEventsSorted() {
-            const result = [];
-            for (const [dateKey, events] of Object.entries(eventsData)) {
-                events.forEach(ev => result.push({ dateKey, event: ev }));
-            }
-            result.sort((a,b) => parseDateKey(a.dateKey) - parseDateKey(b.dateKey));
-            return result;
+
+        function getMergedEventsList() {
+            return getMergedEvents();
         }
 
-        function createSimplifiedListHTML(items) {
-            if (items.length === 0) {
+        function createMergedEventsListHTML(mergedEvents) {
+            if (mergedEvents.length === 0) {
                 return '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
             }
-            const grouped = {};
-            items.forEach(item => {
-                if (!grouped[item.dateKey]) grouped[item.dateKey] = [];
-                grouped[item.dateKey].push(item.event);
-            });
-
             let html = '<div class="event-list">';
-            for (const dateKey of Object.keys(grouped)) {
-                const date = parseDateKey(dateKey);
-                const dateStr = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-                html += `<div class="event-date-group"><div class="event-date-header">${dateStr}</div>`;
-                grouped[dateKey].forEach(event => {
-                    const description = event.description || event.title || 'Событие';
-                    html += `<div class="event-subitem" data-date-key="${dateKey}"><div class="event-subitem-description">${description}</div></div>`;
-                });
-                html += `</div>`;
-            }
+            mergedEvents.forEach(ev => {
+                const sortedDates = [...ev.dates].sort((a,b) => parseDateKey(a) - parseDateKey(b));
+                const firstDate = sortedDates[0];
+                const lastDate = sortedDates[sortedDates.length-1];
+                const dateStr = firstDate === lastDate
+                    ? formatDateForDisplay(firstDate)
+                    : `${formatDateForDisplay(firstDate)} - ${formatDateForDisplay(lastDate)}`;
+                const subtitles = ev.subtitles.filter(s => s && s.trim() !== '');
+                const subtitleHtml = subtitles.length
+                    ? subtitles.map(s => `<div style="font-size:0.8rem; color:var(--calendar-muted); margin-top:3px;">• ${s}</div>`).join('')
+                    : '';
+                html += `
+                    <div class="event-date-group" data-title="${ev.title}">
+                        <div class="event-date-header">${dateStr}</div>
+                        <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
+                        ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
+                        ${subtitleHtml}
+                        <div style="margin-top:8px;">
+                            <button class="action-btn" style="font-size:0.8rem; padding:5px 10px;" onclick="event.stopPropagation(); openEventFromList('${ev.title}')">Подробнее</button>
+                        </div>
+                    </div>
+                `;
+            });
             html += '</div>';
             return html;
         }
 
-        function handleListItemClick(dateKey) {
-            const events = eventsData[dateKey];
-            if (!events || events.length === 0) return;
-            closeListModal();
+        function openEventFromList(title) {
+            const merged = getMergedEvents().find(m => m.title === title);
+            if (!merged || merged.dates.length === 0) return;
+            const dateKey = merged.dates[0];
+            const events = eventsData[dateKey].filter(ev => ev.title === title);
             const [y,m,d] = dateKey.split('-').map(Number);
             currentDate = new Date(y, m-1, 1);
             renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
@@ -966,6 +1050,12 @@
             } else {
                 showDateModal(dateKey, events, null);
             }
+            closeListModal();
+        }
+
+        function formatDateForDisplay(dateKey) {
+            const [y,m,d] = dateKey.split('-').map(Number);
+            return `${d} ${months[m-1]} ${y}`;
         }
 
         // ============================================================
@@ -1031,27 +1121,42 @@
             let currentFilter = 'month';
 
             function applyAllFilters() {
-                const allEvents = getAllEventsSorted();
-                let filtered = allEvents;
+                const allMerged = getMergedEvents();
+                let filtered = allMerged;
 
                 const today = new Date();
                 today.setHours(0,0,0,0);
                 switch (currentFilter) {
                     case 'month': {
                         const endOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0);
-                        filtered = filtered.filter(item => parseDateKey(item.dateKey) >= today && parseDateKey(item.dateKey) <= endOfMonth);
+                        filtered = filtered.filter(ev => {
+                            return ev.dates.some(dateKey => {
+                                const d = parseDateKey(dateKey);
+                                return d >= today && d <= endOfMonth;
+                            });
+                        });
                         break;
                     }
                     case 'half-year': {
                         const sixMonthsLater = new Date(today);
                         sixMonthsLater.setMonth(sixMonthsLater.getMonth()+6);
-                        filtered = filtered.filter(item => parseDateKey(item.dateKey) >= today && parseDateKey(item.dateKey) <= sixMonthsLater);
+                        filtered = filtered.filter(ev => {
+                            return ev.dates.some(dateKey => {
+                                const d = parseDateKey(dateKey);
+                                return d >= today && d <= sixMonthsLater;
+                            });
+                        });
                         break;
                     }
                     case 'year': {
                         const oneYearLater = new Date(today);
                         oneYearLater.setFullYear(oneYearLater.getFullYear()+1);
-                        filtered = filtered.filter(item => parseDateKey(item.dateKey) >= today && parseDateKey(item.dateKey) <= oneYearLater);
+                        filtered = filtered.filter(ev => {
+                            return ev.dates.some(dateKey => {
+                                const d = parseDateKey(dateKey);
+                                return d >= today && d <= oneYearLater;
+                            });
+                        });
                         break;
                     }
                     case 'all': break;
@@ -1060,20 +1165,15 @@
 
                 const statusVal = statusFilter.value;
                 if (statusVal !== 'all') {
-                    if (statusVal === 'play') {
-                        const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
-                        filtered = filtered.filter(item => item.event.status === 'play' && item.dateKey === todayKey);
-                    } else {
-                        filtered = filtered.filter(item => item.event.status === statusVal);
-                    }
+                    filtered = filtered.filter(ev => ev.status === statusVal);
                 }
 
                 const cityVal = cityFilter.value;
                 if (cityVal !== 'all') {
-                    filtered = filtered.filter(item => item.event.city === cityVal);
+                    filtered = filtered.filter(ev => ev.city === cityVal);
                 }
 
-                eventsListContainer.innerHTML = createSimplifiedListHTML(filtered);
+                eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
             }
 
             filterButtons.forEach(btn => {
@@ -1095,25 +1195,22 @@
                 const selYear = parseInt(pickerYearSelect.value,10);
                 const startDate = new Date(selYear, selMonth, 1);
                 const endDate = new Date(selYear, selMonth+1, 0);
-                const allEvents = getAllEventsSorted();
-                let filtered = allEvents.filter(item => {
-                    const eventDate = parseDateKey(item.dateKey);
-                    return eventDate >= startDate && eventDate <= endDate;
+                const allMerged = getMergedEvents();
+                let filtered = allMerged.filter(ev => {
+                    return ev.dates.some(dateKey => {
+                        const d = parseDateKey(dateKey);
+                        return d >= startDate && d <= endDate;
+                    });
                 });
                 const statusVal = statusFilter.value;
                 if (statusVal !== 'all') {
-                    if (statusVal === 'play') {
-                        const todayKey = formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-                        filtered = filtered.filter(item => item.event.status === 'play' && item.dateKey === todayKey);
-                    } else {
-                        filtered = filtered.filter(item => item.event.status === statusVal);
-                    }
+                    filtered = filtered.filter(ev => ev.status === statusVal);
                 }
                 const cityVal = cityFilter.value;
                 if (cityVal !== 'all') {
-                    filtered = filtered.filter(item => item.event.city === cityVal);
+                    filtered = filtered.filter(ev => ev.city === cityVal);
                 }
-                eventsListContainer.innerHTML = createSimplifiedListHTML(filtered);
+                eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
             });
 
             statusFilter.addEventListener('change', applyAllFilters);
@@ -1124,36 +1221,48 @@
             applyAllFilters();
         }
 
-        // ============================================================
-        // ОБРАБОТЧИКИ КНОПОК И СПИСКА БЛИЖАЙШИХ
-        // ============================================================
-        allEventsBtn.addEventListener('click', openAllEvents);
-        listModalCloseBtn.addEventListener('click', closeListModal);
-        listModalOverlay.addEventListener('click', (e) => { if (e.target === listModalOverlay) closeListModal(); });
-
         function closeListModal() {
             listModalOverlay.classList.remove('active');
             tg.BackButton.hide();
         }
+        listModalCloseBtn.addEventListener('click', closeListModal);
+        listModalOverlay.addEventListener('click', (e) => { if (e.target === listModalOverlay) closeListModal(); });
 
+        // ============================================================
+        // СЕКЦИЯ: "МОИ СОБЫТИЯ"
+        // ============================================================
+        myEventsBtn.addEventListener('click', () => {
+            const username = tg.initDataUnsafe?.user?.username;
+            if (!username) {
+                alert('Не удалось получить ваш username из Telegram.');
+                return;
+            }
+            const myMerged = getMergedEvents().filter(ev => ev.users.includes('@' + username));
+            listModalTitle.textContent = 'Мои события';
+            listModalBody.innerHTML = createMergedEventsListHTML(myMerged);
+            listModalOverlay.classList.add('active');
+            tg.BackButton.show();
+        });
+
+        // ============================================================
+        // ОБРАБОТЧИКИ БЛИЖАЙШИХ
+        // ============================================================
         function findNearestEvent(predicate) {
             const today = new Date();
             today.setHours(0,0,0,0);
-            const allEvents = getAllEventsSorted();
-            const futureEvents = allEvents.filter(item => parseDateKey(item.dateKey) >= today);
-            for (const item of futureEvents) {
-                if (predicate(item.event)) {
-                    return item;
-                }
+            const allEvents = [];
+            for (const [dateKey, events] of Object.entries(eventsData)) {
+                events.forEach(ev => allEvents.push({dateKey, event: ev}));
+            }
+            const future = allEvents.filter(item => parseDateKey(item.dateKey) >= today);
+            for (const item of future) {
+                if (predicate(item.event)) return item;
             }
             return null;
         }
 
         function goToEvent(item) {
-            if (!item) {
-                alert('Событие не найдено');
-                return;
-            }
+            if (!item) { alert('Событие не найдено'); return; }
             const dateKey = item.dateKey;
             const events = eventsData[dateKey];
             const [y,m,d] = dateKey.split('-').map(Number);
@@ -1174,26 +1283,24 @@
             const val = nearestSelect.value;
             if (val === 'none') return;
             let predicate;
-            switch (val) {
+            switch(val) {
                 case 'out_current_closest':
-                    predicate = (ev) => ev.type === 'out' && ['current','closest'].includes(ev.status);
+                    predicate = ev => ev.type === 'out' && ['current','closest'].includes(ev.status);
                     break;
                 case 'in_no':
-                    predicate = (ev) => ev.type === 'in' && ev.guest === 'no';
+                    predicate = ev => ev.type === 'in' && ev.guest === 'no';
                     break;
                 case 'in_yes':
-                    predicate = (ev) => ev.type === 'in' && ev.guest === 'yes';
+                    predicate = ev => ev.type === 'in' && ev.guest === 'yes';
                     break;
             }
-            if (predicate) {
-                const item = findNearestEvent(predicate);
-                goToEvent(item);
-            }
+            const item = findNearestEvent(predicate);
+            goToEvent(item);
             nearestSelect.value = 'none';
         });
 
         // ============================================================
-        // СЕКЦИЯ: ГЛОБУС И КАРТА МИРА (OpenLayers)
+        // СЕКЦИЯ: КАРТА МИРА (OpenLayers) с учётом клубов
         // ============================================================
         globeBtn.addEventListener('click', openMapModal);
         mapModalCloseBtn.addEventListener('click', closeMapModal);
@@ -1202,54 +1309,52 @@
         function openMapModal() {
             mapModalOverlay.classList.add('active');
             if (!mapInstance) {
-                // Создаём карту OpenLayers
                 mapInstance = new ol.Map({
                     target: mapContainer,
-                    layers: [
-                        new ol.layer.Tile({
-                            source: new ol.source.OSM()
-                        })
-                    ],
+                    layers: [new ol.layer.Tile({ source: new ol.source.OSM() })],
                     view: new ol.View({
                         center: ol.proj.fromLonLat([37.6173, 55.7558]),
                         zoom: 3
                     }),
-                    controls: ol.control.defaults.defaults().extend([
-                        new ol.control.Zoom()
-                    ])
+                    controls: ol.control.defaults.defaults().extend([new ol.control.Zoom()])
                 });
 
-                // Добавляем маркеры-флажки
-                Object.entries(cityData).forEach(([code, city]) => {
-                    const eventsInCity = [];
-                    for (const [dateKey, events] of Object.entries(eventsData)) {
-                        events.forEach(ev => {
-                            if (ev.city === code) {
-                                eventsInCity.push({ dateKey, event: ev });
-                            }
-                        });
+                // Группируем мероприятия по координатам (клуб или город)
+                const locationEventsMap = {}; // ключ: "club:clubKey" или "city:cityKey"
+                const mergedEvents = getMergedEvents();
+                mergedEvents.forEach(merged => {
+                    let locationKey, coords, locationName;
+                    if (merged.club && clubData[merged.club]) {
+                        locationKey = 'club:' + merged.club;
+                        coords = [clubData[merged.club].lon, clubData[merged.club].lat];
+                        locationName = clubData[merged.club].name;
+                    } else {
+                        locationKey = 'city:' + merged.city;
+                        coords = [cityData[merged.city].lon, cityData[merged.city].lat];
+                        locationName = cityData[merged.city].name;
                     }
-                    if (eventsInCity.length === 0) return;
-
-                    let lat = city.lat;
-                    let lon = city.lon;
-                    if (eventsInCity[0].event.location) {
-                        lat = eventsInCity[0].event.location.lat;
-                        lon = eventsInCity[0].event.location.lon;
+                    if (!locationEventsMap[locationKey]) {
+                        locationEventsMap[locationKey] = {
+                            coords: coords,
+                            name: locationName,
+                            events: []
+                        };
                     }
+                    locationEventsMap[locationKey].events.push(merged);
+                });
 
-                    // Создаём DOM-элемент флажка
+                // Создаём маркеры для каждой локации
+                Object.values(locationEventsMap).forEach(loc => {
                     const flagEl = document.createElement('div');
                     flagEl.className = 'custom-flag-marker';
                     flagEl.innerHTML = `
                         <div class="flag-pole"></div>
                         <div class="flag-canvas"></div>
-                        <div class="flag-count">${eventsInCity.length}</div>
+                        <div class="flag-count">${loc.events.length}</div>
                     `;
 
-                    // Создаём Overlay для маркера
                     const marker = new ol.Overlay({
-                        position: ol.proj.fromLonLat([lon, lat]),
+                        position: ol.proj.fromLonLat(loc.coords),
                         positioning: 'bottom-center',
                         element: flagEl,
                         stopEvent: false
@@ -1259,16 +1364,18 @@
                     // Попап с информацией
                     const popupElement = document.createElement('div');
                     popupElement.className = 'ol-popup';
-                    popupElement.innerHTML = `<strong>${city.name}</strong><br>Мероприятий: ${eventsInCity.length}`;
-                    eventsInCity.forEach(({dateKey, event}) => {
-                        const date = parseDateKey(dateKey);
-                        const dateStr = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-                        const status = getStatusConfig(event.status);
+                    popupElement.innerHTML = `<strong>${loc.name}</strong><br>Мероприятий: ${loc.events.length}`;
+                    loc.events.forEach(ev => {
+                        const datesStr = ev.dates.length > 1
+                            ? `${formatDateForDisplay(ev.dates[0])} - ${formatDateForDisplay(ev.dates[ev.dates.length-1])}`
+                            : formatDateForDisplay(ev.dates[0]);
                         popupElement.innerHTML += `
                             <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
-                                <span style="background:${status.color}; display:inline-block; width:10px; height:10px; border-radius:50%;"></span>
-                                <strong>${dateStr}</strong>: ${event.title}
-                                ${event.description ? `<br><small>${event.description}</small>` : ''}
+                                <span style="background:${getStatusConfig(ev.status).color}; display:inline-block; width:10px; height:10px; border-radius:50%;"></span>
+                                <strong>${ev.title}</strong><br>
+                                <small>${datesStr}</small><br>
+                                ${ev.description ? `<small>${ev.description}</small><br>` : ''}
+                                ${ev.links && ev.links.length ? ev.links.map(link => `<a href="${link.url}" target="_blank" rel="noopener noreferrer" style="color: #2481cc;">Перейти к теме</a>`).join('<br>') : ''}
                             </div>
                         `;
                     });
@@ -1280,17 +1387,15 @@
                     });
                     mapInstance.addOverlay(popup);
 
-                    // Показываем попап при клике на флажок
                     flagEl.addEventListener('click', () => {
                         popup.setPosition(marker.getPosition());
                     });
-                    // Скрываем попап при клике на карту (можно добавить)
                     mapInstance.on('click', () => {
                         popup.setPosition(undefined);
                     });
                 });
 
-                // Анимация приближения к России
+                // Анимация приближения
                 setTimeout(() => {
                     mapInstance.getView().animate({
                         center: ol.proj.fromLonLat([37.6173, 55.7558]),
@@ -1299,7 +1404,6 @@
                     });
                 }, 500);
             }
-            // Обновляем размер карты после показа модального окна
             setTimeout(() => mapInstance.updateSize(), 100);
         }
 
@@ -1311,13 +1415,9 @@
         // ОБРАБОТЧИК КНОПКИ НАЗАД TELEGRAM
         // ============================================================
         tg.onEvent('backButtonClicked', () => {
-            if (modalOverlay.classList.contains('active')) {
-                closeDateModal();
-            } else if (listModalOverlay.classList.contains('active')) {
-                closeListModal();
-            } else if (mapModalOverlay.classList.contains('active')) {
-                closeMapModal();
-            }
+            if (modalOverlay.classList.contains('active')) closeDateModal();
+            else if (listModalOverlay.classList.contains('active')) closeListModal();
+            else if (mapModalOverlay.classList.contains('active')) closeMapModal();
         });
 
         // ============================================================
