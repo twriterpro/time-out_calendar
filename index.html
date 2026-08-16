@@ -605,8 +605,8 @@
         // ============================================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=4')
-                    .then(reg => console.log('SW registered, version 4'))
+                navigator.serviceWorker.register('./sw.js?v=3')
+                    .then(reg => console.log('SW registered, version 3'))
                     .catch(err => console.error('SW registration failed', err));
             });
         }
@@ -632,6 +632,21 @@
         }
         applyTelegramTheme();
         tg.onEvent('themeChanged', applyTelegramTheme);
+
+        // ============================================================
+        // СЕКЦИЯ: БАЗА ПОЛЬЗОВАТЕЛЕЙ (TELEGRAM USERS)
+        // ============================================================
+        // В этом объекте сопоставляем понятное имя (латиницей) с реальными данными.
+        // id – числовой Telegram ID (обязательно, если у пользователя нет username).
+        // username – строка с @ или без (если есть).
+        // Если username нет, можно указать null или вообще опустить поле.
+        const USER_DB = {
+            'Ivan': { id: 123456789, username: '@ivan' },
+            'Petr': { id: 987654321, username: '@petr' },
+            'Sidor': { id: 555555555, username: null },      // без username
+            'UserWithoutUsername': { id: 222222222, username: null } // без username
+            // Добавляйте новых пользователей по аналогии
+        };
 
         // ============================================================
         // СЕКЦИЯ: ГОРОДА (city) с GPS координатами для карты
@@ -672,105 +687,170 @@
         // ============================================================
         // СЕКЦИЯ: ДАННЫЕ СОБЫТИЙ
         // ============================================================
-        // В событиях теперь есть поле userIds (массив числовых ID).
-        // Для пользователей с username используем users, для без username – userIds.
-        // Пример:
-        //   users: ['@ivan', '@petr'],   – для тех, у кого username
-        //   userIds: [123456789, 987654321] – для тех, у кого нет username
-        // Если userIds не нужен, можно ставить пустой массив.
+        // В поле participants указываются имена из USER_DB.
         const eventsData = {
-            '2025-11-22': [
+            '2025-11-15': [
                 {
                     title: 'Тверь 22-23 ноября 🏁',
-                    subtitle: 'Личный турнир',
-                    description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }],
-                    type: 'out',
-                    guest: 'no',
+                    subtitle: '',
                     city: 'tver',
                     club: 'tver_club_1',
-                    location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
-                    users: [],
-                    userIds: ['1340734814'],
-                    status: 'finish',
+                    type: 'out',
+                    guest: 'no',
+                    status: 'current',
+                    description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
+                    participants: ['Ivan', 'Petr'],
+                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }]
                 }
             ],
-            '2025-11-23': [
+            '2025-12-01': [
                 {
-                    title: 'Тверь 22-23 ноября 🏁',
-                    subtitle: 'Парный турнир',
-                    description: 'КНТ "Stalex" г. Тверь - "Тайм-Аут" НТ Москва',
-                    links: [{ url: 'https://t.me/c/3037484330/20', text: 'Перейти к теме', emoji: '1️⃣' }],
-                    type: 'out',
+                    title: 'Тренировка',
+                    subtitle: 'Подготовка к турниру',
+                    city: 'moscow',
+                    club: 'moscow_club_a',
+                    type: 'in',
                     guest: 'no',
-                    city: 'tver',
-                    club: 'tver_club_1',
-                    location: { lat: 56.8587, lon: 35.9176 }, // точные координаты места
-                    users: [],
-                    userIds: ['1340734814'],
-                    status: 'finish',
+                    status: 'plan',
+                    description: 'Внутренняя тренировка команды',
+                    participants: ['Ivan', 'Sidor'],
+                    links: [{ url: 'https://t.me/c/123', text: 'Перейти к теме', emoji: '' }]
                 }
             ],
+            '2026-01-10': [
+                {
+                    title: 'Встречаем гостей из Минска',
+                    subtitle: 'Товарищеский матч',
+                    city: 'moscow',
+                    club: 'moscow_club_b',
+                    type: 'in',
+                    guest: 'yes',
+                    status: 'closest',
+                    description: 'Игра с командой из Минска',
+                    participants: ['Petr', 'Sidor'],
+                    links: [{ url: 'https://t.me/c/456', text: 'Перейти к теме', emoji: '' }]
+                }
+            ],
+            '2026-02-14': [
+                {
+                    title: 'Турнир сообщества',
+                    subtitle: 'Открытый чемпионат',
+                    city: 'spb',
+                    club: 'spb_club_1',
+                    type: 'in',
+                    guest: 'no',
+                    status: 'plan',
+                    description: 'Ежегодный турнир среди команд',
+                    participants: ['Ivan'],
+                    links: []
+                }
+            ],
+            '2026-03-05': [
+                {
+                    title: 'Выезд в Казань',
+                    subtitle: 'Матч',
+                    city: 'kazan',
+                    type: 'out',
+                    guest: 'no',
+                    status: 'plan',
+                    description: 'Игра на выезде',
+                    participants: ['UserWithoutUsername'],
+                    links: []
+                }
+            ]
         };
+
+        // ============================================================
+        // СЕКЦИЯ: ПРЕОБРАЗОВАНИЕ УЧАСТНИКОВ
+        // ============================================================
+        // Функция принимает массив имён участников (или старые поля users/userIds)
+        // и возвращает объект с массивами users (username) и userIds (id).
+        function resolveParticipants(event) {
+            const users = [];
+            const userIds = [];
+
+            // Если указаны participants (новый формат)
+            if (event.participants && Array.isArray(event.participants)) {
+                event.participants.forEach(participantName => {
+                    const user = USER_DB[participantName];
+                    if (!user) {
+                        console.warn(`Пользователь "${participantName}" не найден в USER_DB`);
+                        return;
+                    }
+                    if (user.username) {
+                        users.push(user.username.startsWith('@') ? user.username : '@' + user.username);
+                    }
+                    if (user.id) {
+                        userIds.push(Number(user.id));
+                    }
+                });
+            }
+
+            // Обратная совместимость: если в событии есть старые поля
+            if (event.users && Array.isArray(event.users)) {
+                event.users.forEach(u => {
+                    if (!users.includes(u)) users.push(u);
+                });
+            }
+            if (event.userIds && Array.isArray(event.userIds)) {
+                event.userIds.forEach(id => {
+                    const numericId = Number(id);
+                    if (!userIds.includes(numericId)) userIds.push(numericId);
+                });
+            }
+
+            return { users, userIds };
+        }
 
         // ============================================================
         // СЕКЦИЯ: ОБЪЕДИНЕНИЕ СОБЫТИЙ ПО TITLE
         // ============================================================
-           let mergedEventsCache = null;
+        let mergedEventsCache = null;
 
-function getMergedEvents() {
-    if (mergedEventsCache) return mergedEventsCache;
-    const mergedMap = new Map();
-    
-    for (const [dateKey, events] of Object.entries(eventsData)) {
-        events.forEach(ev => {
-            const key = ev.title;
-            
-            if (!mergedMap.has(key)) {
-                mergedMap.set(key, {
-                    title: ev.title,
-                    dates: [],
-                    subtitles: [],
-                    city: ev.city,
-                    club: ev.club || null,
-                    type: ev.type,
-                    guest: ev.guest,
-                    status: ev.status,
-                    description: ev.description,
-                    users: [],
-                    userIds: [],
-                    links: ev.links || []
-                });
-            }
-            
-            const merged = mergedMap.get(key);
-            merged.dates.push(dateKey);
-            merged.subtitles.push(ev.subtitle || '');
-            
-            // Объединяем users
-            if (ev.users && Array.isArray(ev.users)) {
-                ev.users.forEach(u => {
-                    if (!merged.users.includes(u)) {
-                        merged.users.push(u);
+        function getMergedEvents() {
+            if (mergedEventsCache) return mergedEventsCache;
+            const mergedMap = new Map();
+
+            for (const [dateKey, events] of Object.entries(eventsData)) {
+                events.forEach(ev => {
+                    const key = ev.title;
+
+                    if (!mergedMap.has(key)) {
+                        // Инициализируем объединённый объект
+                        mergedMap.set(key, {
+                            title: ev.title,
+                            dates: [],
+                            subtitles: [],
+                            city: ev.city,
+                            club: ev.club || null,
+                            type: ev.type,
+                            guest: ev.guest,
+                            status: ev.status,
+                            description: ev.description,
+                            users: [],      // будет заполнено ниже
+                            userIds: [],    // будет заполнено ниже
+                            links: ev.links || []
+                        });
                     }
+
+                    const merged = mergedMap.get(key);
+                    merged.dates.push(dateKey);
+                    merged.subtitles.push(ev.subtitle || '');
+
+                    // Получаем участников из события и объединяем
+                    const { users, userIds } = resolveParticipants(ev);
+                    users.forEach(u => {
+                        if (!merged.users.includes(u)) merged.users.push(u);
+                    });
+                    userIds.forEach(id => {
+                        if (!merged.userIds.includes(id)) merged.userIds.push(id);
+                    });
                 });
             }
-            
-            // Объединяем userIds (с приведением к Number)
-            if (ev.userIds && Array.isArray(ev.userIds)) {
-                ev.userIds.forEach(id => {
-                    const numericId = Number(id);
-                    if (!merged.userIds.includes(numericId)) {
-                        merged.userIds.push(numericId);
-                    }
-                });
-            }
-        });
-    }
-    
-    mergedEventsCache = Array.from(mergedMap.values());
-    return mergedEventsCache;
-}
+
+            mergedEventsCache = Array.from(mergedMap.values());
+            return mergedEventsCache;
+        }
 
         // ============================================================
         // СЕКЦИЯ: АВТОМАТИЧЕСКОЕ ОПРЕДЕЛЕНИЕ СТАТУСА
@@ -834,28 +914,6 @@ function getMergedEvents() {
             return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         }
 
-
-        // ============================================================
-// ВРЕМЕННАЯ ЗАГЛУШКА (до финального деплоя)
-// ============================================================
-const ALLOWED_USER_IDS = [1340734814]; // замените на ваш ID (можно несколько через запятую)
-const currentUserId = tg.initDataUnsafe?.user?.id;
-
-if (!currentUserId || !ALLOWED_USER_IDS.includes(currentUserId)) {
-    // Если пользователь не разрешён — показываем заглушку
-    document.body.innerHTML = `
-        <div style="display:flex; align-items:center; justify-content:center; height:100vh; font-family: sans-serif; color: #999;">
-            <div style="text-align:center;">
-                <h2 style="font-size:1.5rem; margin-bottom:10px;">Приложение будет доступно позже</h2>
-            </div>
-        </div>
-    `;
-    // Прерываем выполнение остального кода
-    throw new Error('Access denied');
-}
-// ============================================================
-        
-        
         function populateSelects() {
             monthSelect.innerHTML = '';
             months.forEach((m, i) => {
@@ -1114,292 +1172,256 @@ if (!currentUserId || !ALLOWED_USER_IDS.includes(currentUserId)) {
         }
 
         // ============================================================
-        // ОКНО "ВСЕ МЕРОПРИЯТИЯ" (исправлено закрытие)
+        // ОКНО "ВСЕ МЕРОПРИЯТИЯ" (исправлена логика фильтра "Выбор месяца")
         // ============================================================
-        // ============================================================
-// ОКНО "ВСЕ МЕРОПРИЯТИЯ" (исправлена логика фильтра "Выбор месяца")
-// ============================================================
-function openAllEvents() {
-    listModalTitle.textContent = 'Все мероприятия';
-    listModalBody.innerHTML = `
-        <div class="filter-container" id="filterContainer">
-            <button class="filter-btn active" data-filter="month">За месяц</button>
-            <button class="filter-btn" data-filter="half-year">За полгода</button>
-            <button class="filter-btn" data-filter="year">За год</button>
-            <button class="filter-btn" data-filter="specific">Выбор месяца</button>
-            <button class="filter-btn" data-filter="all">За все время</button>
-        </div>
-        <div class="month-picker-container" id="monthPickerContainer">
-            <select class="picker-select" id="pickerMonthSelect"></select>
-            <select class="picker-select" id="pickerYearSelect"></select>
-            <button class="apply-btn" id="applyMonthFilter">Применить</button>
-        </div>
-        <div class="status-city-container visible" id="statusCityContainer">
-            <select class="picker-select" id="statusFilter">
-                <option value="all">Все статусы</option>
-                <option value="finish">Завершено</option>
-                <option value="current">В процессе подготовки</option>
-                <option value="play">Сейчас идет</option>
-                <option value="closest">Ближайшие</option>
-                <option value="plan">Планируемые</option>
-            </select>
-            <select class="picker-select" id="cityFilter">
-                <option value="all">Все города</option>
-                ${Object.entries(cityData).map(([code, city]) => `<option value="${code}">${city.name}</option>`).join('')}
-            </select>
-        </div>
-        <div id="allEventsListContainer"></div>
-    `;
+        function openAllEvents() {
+            listModalTitle.textContent = 'Все мероприятия';
+            listModalBody.innerHTML = `
+                <div class="filter-container" id="filterContainer">
+                    <button class="filter-btn active" data-filter="month">За месяц</button>
+                    <button class="filter-btn" data-filter="half-year">За полгода</button>
+                    <button class="filter-btn" data-filter="year">За год</button>
+                    <button class="filter-btn" data-filter="specific">Выбор месяца</button>
+                    <button class="filter-btn" data-filter="all">За все время</button>
+                </div>
+                <div class="month-picker-container" id="monthPickerContainer">
+                    <select class="picker-select" id="pickerMonthSelect"></select>
+                    <select class="picker-select" id="pickerYearSelect"></select>
+                    <button class="apply-btn" id="applyMonthFilter">Применить</button>
+                </div>
+                <div class="status-city-container visible" id="statusCityContainer">
+                    <select class="picker-select" id="statusFilter">
+                        <option value="all">Все статусы</option>
+                        <option value="finish">Завершено</option>
+                        <option value="current">В процессе подготовки</option>
+                        <option value="play">Сейчас идет</option>
+                        <option value="closest">Ближайшие</option>
+                        <option value="plan">Планируемые</option>
+                    </select>
+                    <select class="picker-select" id="cityFilter">
+                        <option value="all">Все города</option>
+                        ${Object.entries(cityData).map(([code, city]) => `<option value="${code}">${city.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div id="allEventsListContainer"></div>
+            `;
 
-    const eventsListContainer = document.getElementById('allEventsListContainer');
-    const filterButtons = document.querySelectorAll('#filterContainer .filter-btn');
-    const monthPickerContainer = document.getElementById('monthPickerContainer');
-    const pickerMonthSelect = document.getElementById('pickerMonthSelect');
-    const pickerYearSelect = document.getElementById('pickerYearSelect');
-    const applyMonthFilterBtn = document.getElementById('applyMonthFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const cityFilter = document.getElementById('cityFilter');
+            const eventsListContainer = document.getElementById('allEventsListContainer');
+            const filterButtons = document.querySelectorAll('#filterContainer .filter-btn');
+            const monthPickerContainer = document.getElementById('monthPickerContainer');
+            const pickerMonthSelect = document.getElementById('pickerMonthSelect');
+            const pickerYearSelect = document.getElementById('pickerYearSelect');
+            const applyMonthFilterBtn = document.getElementById('applyMonthFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            const cityFilter = document.getElementById('cityFilter');
 
-    // Инициализация выпадающих списков месяца и года
-    const now = new Date();
-    months.forEach((mName, idx) => {
-        const opt = document.createElement('option');
-        opt.value = idx;
-        opt.textContent = mName;
-        pickerMonthSelect.appendChild(opt);
-    });
-    pickerMonthSelect.value = now.getMonth();
-    for (let y = START_YEAR; y <= END_YEAR; y++) {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = y;
-        pickerYearSelect.appendChild(opt);
-    }
-    pickerYearSelect.value = now.getFullYear();
-
-    let currentFilter = 'month'; // активный фильтр
-
-    // Единая функция применения всех фильтров
-    function applyAllFilters() {
-        const allMerged = getMergedEvents();
-        let filtered = allMerged;
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // 1. Фильтр по времени
-        switch (currentFilter) {
-            case 'month': {
-                const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                filtered = filtered.filter(ev => {
-                    return ev.dates.some(dateKey => {
-                        const d = parseDateKey(dateKey);
-                        return d >= today && d <= endOfMonth;
-                    });
-                });
-                break;
-            }
-            case 'half-year': {
-                const sixMonthsLater = new Date(today);
-                sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
-                filtered = filtered.filter(ev => {
-                    return ev.dates.some(dateKey => {
-                        const d = parseDateKey(dateKey);
-                        return d >= today && d <= sixMonthsLater;
-                    });
-                });
-                break;
-            }
-            case 'year': {
-                const oneYearLater = new Date(today);
-                oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
-                filtered = filtered.filter(ev => {
-                    return ev.dates.some(dateKey => {
-                        const d = parseDateKey(dateKey);
-                        return d >= today && d <= oneYearLater;
-                    });
-                });
-                break;
-            }
-            case 'specific': {
-                // ВАЖНОЕ ИЗМЕНЕНИЕ: при выборе "Выбор месяца" фильтруем по значениям селектов
-                const selMonth = parseInt(pickerMonthSelect.value, 10);
-                const selYear = parseInt(pickerYearSelect.value, 10);
-                const startDate = new Date(selYear, selMonth, 1);
-                const endDate = new Date(selYear, selMonth + 1, 0);
-                filtered = filtered.filter(ev => {
-                    return ev.dates.some(dateKey => {
-                        const d = parseDateKey(dateKey);
-                        return d >= startDate && d <= endDate;
-                    });
-                });
-                break;
-            }
-            case 'all': {
-                // Ничего не делаем, все события уже в filtered
-                break;
-            }
-        }
-
-        // 2. Фильтр по статусу (если выбран конкретный статус)
-        const statusVal = statusFilter.value;
-        if (statusVal !== 'all') {
-            filtered = filtered.filter(ev => {
-                const eff = getEffectiveStatus(ev, ev.title);
-                return eff === statusVal;
+            const now = new Date();
+            months.forEach((mName, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = mName;
+                pickerMonthSelect.appendChild(opt);
             });
-        }
+            pickerMonthSelect.value = now.getMonth();
+            for (let y = START_YEAR; y <= END_YEAR; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                pickerYearSelect.appendChild(opt);
+            }
+            pickerYearSelect.value = now.getFullYear();
 
-        // 3. Фильтр по городу
-        const cityVal = cityFilter.value;
-        if (cityVal !== 'all') {
-            filtered = filtered.filter(ev => ev.city === cityVal);
-        }
+            let currentFilter = 'month';
 
-        // Выводим отфильтрованный список
-        eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
-    }
+            function applyAllFilters() {
+                const allMerged = getMergedEvents();
+                let filtered = allMerged;
 
-    // Обработчики кнопок быстрых фильтров
-    filterButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            filterButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentFilter = btn.dataset.filter;
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                switch (currentFilter) {
+                    case 'month': {
+                        const endOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0);
+                        filtered = filtered.filter(ev => {
+                            return ev.dates.some(dateKey => {
+                                const d = parseDateKey(dateKey);
+                                return d >= today && d <= endOfMonth;
+                            });
+                        });
+                        break;
+                    }
+                    case 'half-year': {
+                        const sixMonthsLater = new Date(today);
+                        sixMonthsLater.setMonth(sixMonthsLater.getMonth()+6);
+                        filtered = filtered.filter(ev => {
+                            return ev.dates.some(dateKey => {
+                                const d = parseDateKey(dateKey);
+                                return d >= today && d <= sixMonthsLater;
+                            });
+                        });
+                        break;
+                    }
+                    case 'year': {
+                        const oneYearLater = new Date(today);
+                        oneYearLater.setFullYear(oneYearLater.getFullYear()+1);
+                        filtered = filtered.filter(ev => {
+                            return ev.dates.some(dateKey => {
+                                const d = parseDateKey(dateKey);
+                                return d >= today && d <= oneYearLater;
+                            });
+                        });
+                        break;
+                    }
+                    case 'specific': {
+                        const selMonth = parseInt(pickerMonthSelect.value,10);
+                        const selYear = parseInt(pickerYearSelect.value,10);
+                        const startDate = new Date(selYear, selMonth, 1);
+                        const endDate = new Date(selYear, selMonth + 1, 0);
+                        filtered = filtered.filter(ev => {
+                            return ev.dates.some(dateKey => {
+                                const d = parseDateKey(dateKey);
+                                return d >= startDate && d <= endDate;
+                            });
+                        });
+                        break;
+                    }
+                    case 'all': {
+                        // Ничего не делаем
+                        break;
+                    }
+                }
 
-            // Показываем/скрываем блок выбора месяца
-            if (currentFilter === 'specific') {
-                monthPickerContainer.classList.add('visible');
-            } else {
-                monthPickerContainer.classList.remove('visible');
+                const statusVal = statusFilter.value;
+                if (statusVal !== 'all') {
+                    filtered = filtered.filter(ev => {
+                        const eff = getEffectiveStatus(ev, ev.title);
+                        return eff === statusVal;
+                    });
+                }
+
+                const cityVal = cityFilter.value;
+                if (cityVal !== 'all') {
+                    filtered = filtered.filter(ev => ev.city === cityVal);
+                }
+
+                eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
             }
 
-            // Немедленно применяем фильтр (для 'specific' используются текущие значения селектов)
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.filter;
+                    if (currentFilter === 'specific') {
+                        monthPickerContainer.classList.add('visible');
+                    } else {
+                        monthPickerContainer.classList.remove('visible');
+                    }
+                    applyAllFilters();
+                });
+            });
+
+            // Автоматическое обновление при изменении месяца/года, если активен "Выбор месяца"
+            pickerMonthSelect.addEventListener('change', () => {
+                if (currentFilter === 'specific') applyAllFilters();
+            });
+            pickerYearSelect.addEventListener('change', () => {
+                if (currentFilter === 'specific') applyAllFilters();
+            });
+
+            applyMonthFilterBtn.addEventListener('click', () => {
+                if (currentFilter === 'specific') applyAllFilters();
+            });
+
+            statusFilter.addEventListener('change', applyAllFilters);
+            cityFilter.addEventListener('change', applyAllFilters);
+
+            eventsListContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('.open-event-btn');
+                if (btn) {
+                    openEventFromList(btn.dataset.title);
+                }
+            });
+
+            listModalOverlay.classList.add('active');
+            tg.BackButton.show();
             applyAllFilters();
-        });
-    });
-
-    // При изменении селектов месяца или года, если активен фильтр "specific",
-    // автоматически пересчитываем результаты (без нажатия "Применить")
-    pickerMonthSelect.addEventListener('change', () => {
-        if (currentFilter === 'specific') {
-            applyAllFilters();
         }
-    });
-
-    pickerYearSelect.addEventListener('change', () => {
-        if (currentFilter === 'specific') {
-            applyAllFilters();
-        }
-    });
-
-    // Кнопка "Применить" (оставлена для совместимости, но теперь не обязательна)
-    applyMonthFilterBtn.addEventListener('click', () => {
-        // Просто вызываем фильтрацию, если активен specific (значения уже прочитаны)
-        if (currentFilter === 'specific') {
-            applyAllFilters();
-        }
-    });
-
-    // Обработчики для фильтра статуса и города (действуют всегда)
-    statusFilter.addEventListener('change', applyAllFilters);
-    cityFilter.addEventListener('change', applyAllFilters);
-
-    // Делегирование кликов по кнопкам "Подробнее"
-    eventsListContainer.addEventListener('click', (e) => {
-        const btn = e.target.closest('.open-event-btn');
-        if (btn) {
-            openEventFromList(btn.dataset.title);
-        }
-    });
-
-    // Открываем модальное окно и применяем начальный фильтр (по умолчанию "За месяц")
-    listModalOverlay.classList.add('active');
-    tg.BackButton.show();
-    applyAllFilters();
-}
-        function closeListModal() {
-            listModalOverlay.classList.remove('active');
-            tg.BackButton.hide();
-        }
-        listModalCloseBtn.addEventListener('click', closeListModal);
-        listModalOverlay.addEventListener('click', (e) => { if (e.target === listModalOverlay) closeListModal(); });
 
         // ============================================================
         // СЕКЦИЯ: "МОИ СОБЫТИЯ" (гибридная фильтрация)
         // ============================================================
         function openMyEvents() {
-    const user = tg.initDataUnsafe?.user;
-    if (!user) {
-        alert('Данные пользователя недоступны.');
-        return;
-    }
-    const username = user.username ? user.username.toLowerCase() : null;
-    const userId = user.id ? Number(user.id) : null;
-    
-    if (!userId && !username) {
-        alert('Не удалось идентифицировать пользователя.');
-        return;
-    }
-    
-    const myMerged = getMergedEvents().filter(ev => {
-        if (username) {
-            const found = ev.users.some(u => u.toLowerCase() === '@' + username);
-            if (found) return true;
+            const user = tg.initDataUnsafe?.user;
+            if (!user) {
+                alert('Данные пользователя недоступны.');
+                return;
+            }
+            const username = user.username ? user.username.toLowerCase() : null;
+            const userId = user.id ? Number(user.id) : null;
+
+            if (!userId && !username) {
+                alert('Не удалось идентифицировать пользователя.');
+                return;
+            }
+
+            const myMerged = getMergedEvents().filter(ev => {
+                if (username) {
+                    const found = ev.users.some(u => u.toLowerCase() === '@' + username);
+                    if (found) return true;
+                }
+                if (userId && ev.userIds.includes(userId)) {
+                    return true;
+                }
+                return false;
+            });
+
+            const groupedByStatus = {};
+            myMerged.forEach(ev => {
+                const eff = getEffectiveStatus(ev, ev.title);
+                if (!groupedByStatus[eff]) groupedByStatus[eff] = [];
+                groupedByStatus[eff].push(ev);
+            });
+
+            let html = '';
+            for (const statusKey in groupedByStatus) {
+                const st = getStatusConfig(statusKey);
+                html += `<div style="margin-bottom:15px;">
+                    <div style="background:${st.color}; color:#fff; padding:6px 12px; border-radius:20px; display:inline-block; font-size:0.9rem; font-weight:600; margin-bottom:8px;">${st.name}</div>
+                    <div class="event-list">`;
+                groupedByStatus[statusKey].forEach(ev => {
+                    const sortedDates = [...ev.dates].sort((a,b) => parseDateKey(a) - parseDateKey(b));
+                    const firstDate = sortedDates[0];
+                    const lastDate = sortedDates[sortedDates.length-1];
+                    const dateStr = firstDate === lastDate
+                        ? formatDateForDisplay(firstDate)
+                        : `${formatDateForDisplay(firstDate)} - ${formatDateForDisplay(lastDate)}`;
+                    const statusDot = `<span class="status-indicator" style="background:${st.color};"></span>`;
+                    html += `
+                        <div class="event-date-group" data-title="${ev.title}">
+                            <div class="event-date-header">${statusDot}${dateStr}</div>
+                            <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
+                            ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
+                            <button class="action-btn open-event-btn" style="font-size:0.8rem; padding:5px 10px;" data-title="${ev.title}">Подробнее</button>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+            }
+
+            if (html === '') {
+                html = '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
+            }
+
+            listModalTitle.textContent = 'Мои события';
+            listModalBody.innerHTML = html;
+            listModalBody.addEventListener('click', (e) => {
+                const btn = e.target.closest('.open-event-btn');
+                if (btn) openEventFromList(btn.dataset.title);
+            });
+            listModalOverlay.classList.add('active');
+            tg.BackButton.show();
         }
-        if (userId && ev.userIds.includes(userId)) {
-            return true;
-        }
-        return false;
-    });
-    
-    // Группируем по статусам
-    const groupedByStatus = {};
-    myMerged.forEach(ev => {
-        const eff = getEffectiveStatus(ev, ev.title);
-        if (!groupedByStatus[eff]) groupedByStatus[eff] = [];
-        groupedByStatus[eff].push(ev);
-    });
-    
-    let html = '';
-    for (const statusKey in groupedByStatus) {
-        const st = getStatusConfig(statusKey);
-        html += `<div style="margin-bottom:15px;">
-            <div style="background:${st.color}; color:#fff; padding:6px 12px; border-radius:20px; display:inline-block; font-size:0.9rem; font-weight:600; margin-bottom:8px;">${st.name}</div>
-            <div class="event-list">`;
-        groupedByStatus[statusKey].forEach(ev => {
-            const sortedDates = [...ev.dates].sort((a,b) => parseDateKey(a) - parseDateKey(b));
-            const firstDate = sortedDates[0];
-            const lastDate = sortedDates[sortedDates.length-1];
-            const dateStr = firstDate === lastDate
-                ? formatDateForDisplay(firstDate)
-                : `${formatDateForDisplay(firstDate)} - ${formatDateForDisplay(lastDate)}`;
-            const statusDot = `<span class="status-indicator" style="background:${st.color};"></span>`;
-            html += `
-                <div class="event-date-group" data-title="${ev.title}">
-                    <div class="event-date-header">${statusDot}${dateStr}</div>
-                    <div style="font-weight:600; margin-bottom:5px;">${ev.title}</div>
-                    ${ev.description ? `<div class="event-subitem-description" style="margin-bottom:8px;">${ev.description}</div>` : ''}
-                    <button class="action-btn open-event-btn" style="font-size:0.8rem; padding:5px 10px;" data-title="${ev.title}">Подробнее</button>
-                </div>
-            `;
-        });
-        html += `</div></div>`;
-    }
-    
-    if (html === '') {
-        html = '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
-    }
-    
-    listModalTitle.textContent = 'Мои события';
-    listModalBody.innerHTML = html;
-    listModalBody.addEventListener('click', (e) => {
-        const btn = e.target.closest('.open-event-btn');
-        if (btn) openEventFromList(btn.dataset.title);
-    });
-    listModalOverlay.classList.add('active');
-    tg.BackButton.show();
-}
 
         // ============================================================
         // ОБРАБОТЧИКИ БЛИЖАЙШИХ
