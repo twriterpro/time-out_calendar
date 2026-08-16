@@ -88,8 +88,8 @@
             --my-games-checkbox-border-width: 1px;
             --my-games-checkbox-size: 16px;
             --my-games-checkbox-radius: 4px;
-            --my-games-checkbox-check-size: 4px 8px; /* размер галочки (ширина, высота) */
             --my-games-checkbox-margin-top: 10px;    /* отступ сверху от предыдущих строк */
+            --my-games-checkbox-gap: 2px;            /* величина внутреннего отступа (зазор между рамкой и заливкой) */
         }
 
         @media (prefers-color-scheme: dark) {
@@ -494,19 +494,6 @@
         /* ============================================================
                СТИЛИ ДЛЯ ЧЕКБОКСА "МОИ ИГРЫ" В ЛЕГЕНДЕ
                ============================================================ */
-        .map-legend-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: var(--my-games-checkbox-margin-top);
-            padding-top: 8px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            cursor: pointer;
-            font-size: 0.8rem;
-            color: inherit;
-            user-select: none;
-            transition: opacity 0.2s ease;
-        }
         .map-legend-checkbox input[type="checkbox"] {
             appearance: none;
             -webkit-appearance: none;
@@ -519,22 +506,15 @@
             transition: background-color 0.2s ease, border-color 0.2s ease;
             margin: 0;
             flex-shrink: 0;
+            box-sizing: border-box;          /* фон + рамка включены в размер */
+            padding: var(--my-games-checkbox-gap);   /* внутренний отступ для зазора */
+            background-clip: content-box;    /* фон отрисовывается только внутри padding */
         }
+
         .map-legend-checkbox input[type="checkbox"]:checked {
             background-color: var(--my-games-checkbox-color);
             border-color: var(--my-games-checkbox-color);
         }
-        .map-legend-checkbox input[type="checkbox"]:checked::after {
-            content: '';
-            display: block;
-            width: var(--my-games-checkbox-check-size);
-            height: calc(var(--my-games-checkbox-check-size) * 2);
-            border: solid white;
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
-            margin: 1px 0 0 5px;
-        }
-
         .ol-popup {
             position: absolute;
             background: white;
