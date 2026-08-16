@@ -605,8 +605,8 @@
         // ============================================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=3')
-                    .then(reg => console.log('SW registered, version 3'))
+                navigator.serviceWorker.register('./sw.js?v=4')
+                    .then(reg => console.log('SW registered, version 4'))
                     .catch(err => console.error('SW registration failed', err));
             });
         }
