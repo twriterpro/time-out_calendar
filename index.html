@@ -8,7 +8,7 @@
     <!-- Подключение Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- OpenLayers CSS и JS (возвращаем реальную карту) -->
+    <!-- OpenLayers CSS и JS (реальная карта) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.2.1/ol.css">
     <script src="https://cdn.jsdelivr.net/npm/ol@v10.2.1/dist/ol.js"></script>
 
@@ -329,7 +329,7 @@
         }
         .list-modal-overlay.active .modal-content { transform: translateY(0); opacity:1; }
 
-        /* Иконка глобуса: используем эмодзи без анимации */
+        /* Иконка глобуса: просто эмодзи, без анимации (при желании можно добавить лёгкое покачивание) */
         .globe-btn {
             background: none;
             border: none;
@@ -474,7 +474,7 @@
             <select class="year-select" id="yearSelect"></select>
             <button class="nav-btn" id="nextMonthBtn">›</button>
             <!-- Кнопка глобуса с эмодзи Земли (без анимации) -->
-            <button class="globe-btn" id="globeBtn" title="Карта мира">🌍</button>
+            <button class="globe-btn" id="globeBtn" onclick="openMapModal()" title="Карта мира">🌍</button>
         </div>
         <div class="weekdays">
             <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
@@ -487,8 +487,9 @@
                 <option value="in_no">Ближайший турнир сообщества</option>
                 <option value="in_yes">Встречаем гостей</option>
             </select>
-            <button class="action-btn" id="allEventsBtn">Все мероприятия</button>
-            <button class="my-events-btn" id="myEventsBtn">Мои события</button>
+            <!-- Кнопка "Все мероприятия" с прямым onclick для надёжности -->
+            <button class="action-btn" id="allEventsBtn" onclick="openAllEvents()">Все мероприятия</button>
+            <button class="my-events-btn" id="myEventsBtn" onclick="openMyEvents()">Мои события</button>
         </div>
     </div>
 
@@ -940,7 +941,6 @@
             return getMergedEvents();
         }
 
-        // Функция создания HTML списка объединённых событий (без inline onclick)
         function createMergedEventsListHTML(mergedEvents) {
             if (mergedEvents.length === 0) {
                 return '<p style="text-align:center; color:var(--calendar-muted);">Нет событий</p>';
@@ -997,7 +997,7 @@
         }
 
         // ============================================================
-        // ОКНО "ВСЕ МЕРОПРИЯТИЯ" С ФИЛЬТРАМИ
+        // ОКНО "ВСЕ МЕРОПРИЯТИЯ" С ФИЛЬТРАМИ (исправлено)
         // ============================================================
         function openAllEvents() {
             listModalTitle.textContent = 'Все мероприятия';
@@ -1114,7 +1114,6 @@
                 eventsListContainer.innerHTML = createMergedEventsListHTML(filtered);
             }
 
-            // Обработчики фильтров
             filterButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     filterButtons.forEach(b => b.classList.remove('active'));
@@ -1155,12 +1154,10 @@
             statusFilter.addEventListener('change', applyAllFilters);
             cityFilter.addEventListener('change', applyAllFilters);
 
-            // Делегирование кликов по кнопкам "Подробнее"
             eventsListContainer.addEventListener('click', (e) => {
                 const btn = e.target.closest('.open-event-btn');
                 if (btn) {
-                    const title = btn.dataset.title;
-                    openEventFromList(title);
+                    openEventFromList(btn.dataset.title);
                 }
             });
 
@@ -1169,17 +1166,10 @@
             applyAllFilters();
         }
 
-        function closeListModal() {
-            listModalOverlay.classList.remove('active');
-            tg.BackButton.hide();
-        }
-        listModalCloseBtn.addEventListener('click', closeListModal);
-        listModalOverlay.addEventListener('click', (e) => { if (e.target === listModalOverlay) closeListModal(); });
-
         // ============================================================
         // СЕКЦИЯ: "МОИ СОБЫТИЯ" (с группировкой по статусам)
         // ============================================================
-        myEventsBtn.addEventListener('click', () => {
+        function openMyEvents() {
             const username = tg.initDataUnsafe?.user?.username;
             if (!username) {
                 alert('Не удалось получить ваш username из Telegram.');
@@ -1187,7 +1177,6 @@
             }
             const myMerged = getMergedEvents().filter(ev => ev.users.includes('@' + username));
 
-            // Группируем по статусам
             const groupedByStatus = {};
             myMerged.forEach(ev => {
                 const status = ev.status;
@@ -1195,7 +1184,6 @@
                 groupedByStatus[status].push(ev);
             });
 
-            // Формируем HTML с блоками статусов
             let html = '';
             for (const statusKey in groupedByStatus) {
                 const st = getStatusConfig(statusKey);
@@ -1227,16 +1215,13 @@
 
             listModalTitle.textContent = 'Мои события';
             listModalBody.innerHTML = html;
-            // Делегирование кликов для кнопок "Подробнее"
             listModalBody.addEventListener('click', (e) => {
                 const btn = e.target.closest('.open-event-btn');
-                if (btn) {
-                    openEventFromList(btn.dataset.title);
-                }
+                if (btn) openEventFromList(btn.dataset.title);
             });
             listModalOverlay.classList.add('active');
             tg.BackButton.show();
-        });
+        }
 
         // ============================================================
         // ОБРАБОТЧИКИ БЛИЖАЙШИХ
@@ -1296,14 +1281,10 @@
         // ============================================================
         // СЕКЦИЯ: КАРТА МИРА (OpenLayers) с учётом клубов
         // ============================================================
-        globeBtn.addEventListener('click', openMapModal);
-        mapModalCloseBtn.addEventListener('click', closeMapModal);
-        mapModalOverlay.addEventListener('click', (e) => { if (e.target === mapModalOverlay) closeMapModal(); });
-
-        function openMapModal() {
+        // Функция openMapModal теперь определена глобально, вызывается из HTML
+        window.openMapModal = function() {
             mapModalOverlay.classList.add('active');
             if (!mapInstance) {
-                // Создаём карту OpenLayers
                 mapInstance = new ol.Map({
                     target: mapContainer,
                     layers: [new ol.layer.Tile({ source: new ol.source.OSM() })],
@@ -1338,7 +1319,6 @@
                     locationEventsMap[locationKey].events.push(merged);
                 });
 
-                // Добавляем маркеры
                 Object.values(locationEventsMap).forEach(loc => {
                     const flagEl = document.createElement('div');
                     flagEl.className = 'custom-flag-marker';
@@ -1356,7 +1336,6 @@
                     });
                     mapInstance.addOverlay(marker);
 
-                    // Попап с информацией
                     const popupElement = document.createElement('div');
                     popupElement.className = 'ol-popup';
                     popupElement.innerHTML = `<strong>${loc.name}</strong><br>Мероприятий: ${loc.events.length}`;
@@ -1390,7 +1369,6 @@
                     });
                 });
 
-                // Анимация приближения
                 setTimeout(() => {
                     mapInstance.getView().animate({
                         center: ol.proj.fromLonLat([37.6173, 55.7558]),
@@ -1400,11 +1378,13 @@
                 }, 500);
             }
             setTimeout(() => mapInstance.updateSize(), 100);
-        }
+        };
 
-        function closeMapModal() {
+        window.closeMapModal = function() {
             mapModalOverlay.classList.remove('active');
-        }
+        };
+        mapModalCloseBtn.addEventListener('click', closeMapModal);
+        mapModalOverlay.addEventListener('click', (e) => { if (e.target === mapModalOverlay) closeMapModal(); });
 
         // ============================================================
         // ОБРАБОТЧИК КНОПКИ НАЗАД TELEGRAM
